@@ -1,64 +1,67 @@
 # Skynet Custom Filter List
 
-Bereinigte Kopie der Liste aus
+Cleaned copy of the list from
 [`jumpsmm7/GeneratedAdblock`](https://github.com/jumpsmm7/GeneratedAdblock).
 
-## Dateien
+## Files
 
-- `filter.list`: operative Liste mit 40 am 22.07.2026 erfolgreich geprüften Quellen
-- `generated/drb-ra-IPC2s-30day.ipv4`: SkyNet-kompatible Fassung des C2-CSV-Feeds
-- `scripts/update_c2_feed.py`: reproduzierbare manuelle Aktualisierung der normalisierten C2-Liste
-- `.github/workflows/update-c2-feed.yml`: tägliche Aktualisierung der normalisierten C2-Liste
-- `AUDIT.md`: Prüfergebnis mit Anzahl erkannter IP-/CIDR-Zeilen
+- `filter.list`: operational list containing 40 sources successfully validated on July 22, 2026
+- `generated/drb-ra-IPC2s-30day.ipv4`: SkyNet-compatible version of the C2 CSV feed
+- `scripts/update_c2_feed.py`: reproducible manual update of the normalized C2 list
+- `.github/workflows/update-c2-feed.yml`: daily update of the normalized C2 list
+- `AUDIT.md`: validation results including the number of detected IP/CIDR lines
 
-## Verwendung mit Skynet
+## Using the list with Skynet
 
 ```sh
 firewall banmalware https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/filter.list
 ```
 
-Das Repository muss öffentlich sein, damit der Router die Raw-Datei ohne GitHub-Token abrufen kann.
+The repository must be public so that the router can retrieve the raw file without a GitHub token.
 
-## Bewusst nicht in `filter.list`
+## Intentionally excluded from `filter.list`
 
-- `https://darklist.de/raw.php`: HTTP 200, aber aktuell ohne IP-Einträge
-- `https://iplists.firehol.org/files/normshield_high_attack.ipset`: HTTP 200, aber leer und laut Header seit 19.04.2025 nicht aktualisiert
-- `https://www.talosintelligence.com/documents/ip-blacklist`: HTTP 403 mit `Invoke-WebRequest` und `curl`
+- `https://darklist.de/raw.php`: HTTP 200, but currently contains no IP entries
+- `https://iplists.firehol.org/files/normshield_high_attack.ipset`: HTTP 200, but empty and, according to its header, not updated since April 19, 2025
+- `https://www.talosintelligence.com/documents/ip-blacklist`: HTTP 403 with both `Invoke-WebRequest` and `curl`
 
-`https://voipbl.org/update` bleibt enthalten: Der Server meldet fälschlich `text/html`, liefert aber eine gültige Rohdatenliste.
+`https://voipbl.org/update` remains included: the server incorrectly reports `text/html`, but returns a valid raw data list.
 
-## Normalisierter C2-Feed
+## Normalized C2 feed
 
-Der Upstream-Feed
+The upstream feed
 `https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv`
-enthält Zeilen im Format `IP,Beschreibung`. SkyNet akzeptiert dagegen nur eine
-IP/CIDR als erstes whitespace-getrenntes Feld. Deshalb verweist `filter.list` auf
-die normalisierte Datei in `generated/`.
+contains lines in the format `IP,description`. SkyNet, however, only accepts an
+IP address or CIDR as the first whitespace-delimited field. Therefore,
+`filter.list` references the normalized file in `generated/`.
 
-GitHub Actions aktualisiert diese Datei täglich um 03:17 UTC. Der Workflow hat
-nur für den Aktualisierungsjob `contents: write` und nimmt ausschließlich die
-generierte Datei in den Commit auf. Änderungen am Workflow oder am
-Aktualisierungsscript lösen zusätzlich einen sofortigen Kontrolllauf aus.
+GitHub Actions updates this file every day at 03:17 UTC. The workflow grants
+`contents: write` only to the update job and stages only the generated file for
+commits. Changes to the workflow or update script also trigger an immediate
+validation run.
 
-Manuelle Aktualisierung:
+Manual update:
 
 ```sh
 python scripts/update_c2_feed.py
 ```
 
-## Abgleich mit ViktorJp/Skynet
+## Comparison with ViktorJp/Skynet
 
-Am 13.07.2026 wurde
+On July 13, 2026,
 [`ViktorJp/Skynet/filter.list`](https://github.com/ViktorJp/Skynet/blob/main/filter.list)
-mit dieser Liste verglichen. Alle 33 Quellen waren erreichbar; 26 waren bereits enthalten.
+was compared with this list. All 33 sources were reachable; 26 were already included.
 
-Übernommen wurde `firehol_webserver.netset`. Nicht übernommen wurden vollständig oder weitgehend redundante Quellen, das seit 2019 unveränderte `maxmind_proxy_fraud.ipset` sowie zwei Listen, die das Blocking von Tor-Exit-Nodes auf praktisch das gesamte Tor-Netz erweitern würden. Details stehen in `AUDIT.md`.
+`firehol_webserver.netset` was added. Fully or largely redundant sources, the
+unchanged-since-2019 `maxmind_proxy_fraud.ipset`, and two lists that would
+extend the blocking of Tor exit nodes to practically the entire Tor network
+were not added. See `AUDIT.md` for details.
 
-## Pflege
+## Maintenance
 
-Neue Quellen werden zeilenweise in `filter.list` ergänzt. Vor dem Einsatz prüfen:
+Add new sources to `filter.list`, one per line. Before using a source, verify:
 
-1. HTTP 2xx ohne Authentifizierung
-2. Antwort enthält mindestens eine SkyNet-kompatible IPv4-Adresse oder ein CIDR-Netz im ersten Feld
-3. Keine Login-, Fehler- oder HTML-Seite
-4. Quelle ist stabil und für automatisierte Abrufe vorgesehen
+1. It returns HTTP 2xx without authentication.
+2. The response contains at least one SkyNet-compatible IPv4 address or CIDR in the first field.
+3. The response is not a login, error, or HTML page.
+4. The source is stable and intended for automated retrieval.
