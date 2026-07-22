@@ -8,6 +8,7 @@ Bereinigte Kopie der Liste aus
 - `filter.list`: operative Liste mit 40 am 22.07.2026 erfolgreich geprüften Quellen
 - `generated/drb-ra-IPC2s-30day.ipv4`: SkyNet-kompatible Fassung des C2-CSV-Feeds
 - `scripts/update_c2_feed.py`: reproduzierbare manuelle Aktualisierung der normalisierten C2-Liste
+- `.github/workflows/update-c2-feed.yml`: tägliche Aktualisierung der normalisierten C2-Liste
 - `AUDIT.md`: Prüfergebnis mit Anzahl erkannter IP-/CIDR-Zeilen
 
 ## Verwendung mit Skynet
@@ -33,6 +34,11 @@ Der Upstream-Feed
 enthält Zeilen im Format `IP,Beschreibung`. SkyNet akzeptiert dagegen nur eine
 IP/CIDR als erstes whitespace-getrenntes Feld. Deshalb verweist `filter.list` auf
 die normalisierte Datei in `generated/`.
+
+GitHub Actions aktualisiert diese Datei täglich um 03:17 UTC. Der Workflow hat
+nur für den Aktualisierungsjob `contents: write` und nimmt ausschließlich die
+generierte Datei in den Commit auf. Änderungen am Workflow oder am
+Aktualisierungsscript lösen zusätzlich einen sofortigen Kontrolllauf aus.
 
 Manuelle Aktualisierung:
 

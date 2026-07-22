@@ -68,6 +68,8 @@ Upstream:
 - Ursache: CSV-Komma direkt nach der IP (`IP,Beschreibung`)
 - Lösung: `scripts/update_c2_feed.py` erzeugt
   `generated/drb-ra-IPC2s-30day.ipv4` mit einer IP pro Zeile.
+- Aktualisierung: täglich um 03:17 UTC durch
+  `.github/workflows/update-c2-feed.yml`, zusätzlich manuell auslösbar.
 
 ## Bewusst nicht enthalten
 
