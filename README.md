@@ -1,11 +1,11 @@
 # Skynet Custom Filter List
 
-Cleaned copy of the list from
+Curated copy of the list from
 [`jumpsmm7/GeneratedAdblock`](https://github.com/jumpsmm7/GeneratedAdblock).
 
 ## Files
 
-- `filter.list`: operational list containing 40 sources successfully validated on July 22, 2026
+- `filter.list`: operational list containing 25 sources successfully validated on July 22, 2026
 - `generated/drb-ra-IPC2s-30day.ipv4`: SkyNet-compatible version of the C2 CSV feed
 - `scripts/update_c2_feed.py`: reproducible manual update of the normalized C2 list
 - `.github/workflows/update-c2-feed.yml`: daily update of the normalized C2 list
@@ -21,11 +21,19 @@ The repository must be public so that the router can retrieve the raw file witho
 
 ## Intentionally excluded from `filter.list`
 
+- Tor exit-node lists: Tor relays are not inherently malicious and are outside this list's blocking policy
+- `https://voipbl.org/update`: VoIP/PBX abuse is outside the scope of the protected installation
 - `https://darklist.de/raw.php`: HTTP 200, but currently contains no IP entries
 - `https://iplists.firehol.org/files/normshield_high_attack.ipset`: HTTP 200, but empty and, according to its header, not updated since April 19, 2025
 - `https://www.talosintelligence.com/documents/ip-blacklist`: HTTP 403 with both `Invoke-WebRequest` and `curl`
 
-`https://voipbl.org/update` remains included: the server incorrectly reports `text/html`, but returns a valid raw data list.
+## Source selection
+
+The list favors current, directly maintained feeds over old snapshots and
+duplicate mirrors. IPsum uses level 3 instead of level 1, and the AbuseIPDB
+feed uses a seven-day instead of a 30-day window. HaGeZi's Threat Intelligence
+Feed supplements the remaining sources. See `AUDIT.md` for the complete
+pruning record and measured entry counts.
 
 ## Normalized C2 feed
 
@@ -53,9 +61,8 @@ On July 13, 2026,
 was compared with this list. All 33 sources were reachable; 26 were already included.
 
 `firehol_webserver.netset` was added. Fully or largely redundant sources, the
-unchanged-since-2019 `maxmind_proxy_fraud.ipset`, and two lists that would
-extend the blocking of Tor exit nodes to practically the entire Tor network
-were not added. See `AUDIT.md` for details.
+unchanged-since-2019 `maxmind_proxy_fraud.ipset`, and feeds that would broaden
+blocking to the Tor network were not added. See `AUDIT.md` for details.
 
 ## Maintenance
 
@@ -65,3 +72,4 @@ Add new sources to `filter.list`, one per line. Before using a source, verify:
 2. The response contains at least one SkyNet-compatible IPv4 address or CIDR in the first field.
 3. The response is not a login, error, or HTML page.
 4. The source is stable and intended for automated retrieval.
+5. The source does not broadly block privacy infrastructure solely because of its role.
