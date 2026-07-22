@@ -11,6 +11,8 @@ Geprüft wurden HTTP-Abruf und mindestens eine IPv4-/CIDR-Zeile im ersten,
 whitespace-getrennten Feld. Das entspricht der Verarbeitung in SkyNets
 `banmalware`-Implementierung. Der große AbuseIPDB-Feed wurde zusätzlich mit dem
 von SkyNet verwendeten 15-Sekunden-Limit erfolgreich abgerufen.
+Die Eintragszahlen sind eine Momentaufnahme und können sich bei dynamischen
+Quellen bereits zwischen zwei Abrufen ändern.
 
 | Nr. | IP-/CIDR-Zeilen | URL |
 |---:|---:|---|

@@ -24,7 +24,7 @@ Das Repository muss öffentlich sein, damit der Router die Raw-Datei ohne GitHub
 - `https://iplists.firehol.org/files/normshield_high_attack.ipset`: HTTP 200, aber leer und laut Header seit 19.04.2025 nicht aktualisiert
 - `https://www.talosintelligence.com/documents/ip-blacklist`: HTTP 403 mit `Invoke-WebRequest` und `curl`
 
-`https://voipbl.org/update` bleibt enthalten: Der Server meldet fälschlich `text/html`, liefert aber eine gültige Rohdatenliste mit 94.893 Netzblöcken.
+`https://voipbl.org/update` bleibt enthalten: Der Server meldet fälschlich `text/html`, liefert aber eine gültige Rohdatenliste.
 
 ## Normalisierter C2-Feed
 
