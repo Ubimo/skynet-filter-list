@@ -36,3 +36,5 @@ https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt
 https://sigs.interserver.net/iprbl.txt
 https://www.blocklist.de/downloads/export-ips_all.txt
 https://voipbl.org/update
+https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-30d.ipv4
+https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/generated/drb-ra-IPC2s-30day.ipv4

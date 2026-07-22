@@ -5,9 +5,10 @@ Bereinigte Kopie der Liste aus
 
 ## Dateien
 
-- `filter.list`: operative Liste mit 38 am 13.07.2026 erfolgreich geprüften Quellen
-- `filter.original.list`: unveränderter Snapshot der ursprünglichen 40 Quellen
-- `AUDIT.md`: vollständiges Prüfergebnis mit HTTP-Status und Anzahl erkannter IP-/CIDR-Zeilen
+- `filter.list`: operative Liste mit 40 am 22.07.2026 erfolgreich geprüften Quellen
+- `generated/drb-ra-IPC2s-30day.ipv4`: SkyNet-kompatible Fassung des C2-CSV-Feeds
+- `scripts/update_c2_feed.py`: reproduzierbare manuelle Aktualisierung der normalisierten C2-Liste
+- `AUDIT.md`: Prüfergebnis mit Anzahl erkannter IP-/CIDR-Zeilen
 
 ## Verwendung mit Skynet
 
@@ -25,6 +26,20 @@ Das Repository muss öffentlich sein, damit der Router die Raw-Datei ohne GitHub
 
 `https://voipbl.org/update` bleibt enthalten: Der Server meldet fälschlich `text/html`, liefert aber eine gültige Rohdatenliste mit 94.893 Netzblöcken.
 
+## Normalisierter C2-Feed
+
+Der Upstream-Feed
+`https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv`
+enthält Zeilen im Format `IP,Beschreibung`. SkyNet akzeptiert dagegen nur eine
+IP/CIDR als erstes whitespace-getrenntes Feld. Deshalb verweist `filter.list` auf
+die normalisierte Datei in `generated/`.
+
+Manuelle Aktualisierung:
+
+```sh
+python scripts/update_c2_feed.py
+```
+
 ## Abgleich mit ViktorJp/Skynet
 
 Am 13.07.2026 wurde
@@ -38,6 +53,6 @@ mit dieser Liste verglichen. Alle 33 Quellen waren erreichbar; 26 waren bereits 
 Neue Quellen werden zeilenweise in `filter.list` ergänzt. Vor dem Einsatz prüfen:
 
 1. HTTP 2xx ohne Authentifizierung
-2. Antwort enthält mindestens eine gültige IPv4-/IPv6-Adresse oder ein CIDR-Netz
+2. Antwort enthält mindestens eine SkyNet-kompatible IPv4-Adresse oder ein CIDR-Netz im ersten Feld
 3. Keine Login-, Fehler- oder HTML-Seite
 4. Quelle ist stabil und für automatisierte Abrufe vorgesehen
