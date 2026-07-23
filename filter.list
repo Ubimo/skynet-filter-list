@@ -14,12 +14,12 @@ https://iplists.firehol.org/files/firehol_webserver.netset
 https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset
 https://iplists.firehol.org/files/myip.ipset
 https://lists.blocklist.de/lists/strongips.txt
-https://myip.ms/files/blacklist/general/latest_blacklist.txt
+https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/generated/myip-ms-latest-blacklist.ipv4
 https://raw.githubusercontent.com/jumpsmm7/GeneratedAdblock/master/IPlist.list
 https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt
 https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt
 https://sigs.interserver.net/iprbl.txt
-https://www.blocklist.de/downloads/export-ips_all.txt
+https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/generated/blocklist-de-export-ips-all.ipv4
 https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4
 https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt
 https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/generated/drb-ra-IPC2s-30day.ipv4
