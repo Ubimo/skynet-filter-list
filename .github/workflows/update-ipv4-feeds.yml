@@ -1,0 +1,91 @@
+name: Update normalized IPv4 feeds
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/update-ipv4-feeds.yml
+      - filter.list
+      - scripts/audit_sources.py
+      - scripts/update_ipv4_feeds.py
+      - tests/test_ipv4_feeds.py
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/update-ipv4-feeds.yml
+      - filter.list
+      - scripts/audit_sources.py
+      - scripts/update_ipv4_feeds.py
+      - tests/test_ipv4_feeds.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-normalized-ipv4-feeds
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Regenerate normalized feeds
+        run: python3 scripts/update_ipv4_feeds.py
+
+      - name: Audit all operational sources
+        run: python3 scripts/audit_sources.py --timeout 45 --retries 1
+
+  update:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Download, validate and normalize feeds
+        run: python3 scripts/update_ipv4_feeds.py
+
+      - name: Audit all operational sources
+        run: python3 scripts/audit_sources.py --timeout 45 --retries 1
+
+      - name: Commit changed feeds
+        shell: bash
+        run: |
+          set -euo pipefail
+          output_files=(
+            "generated/blocklist-de-export-ips-all.ipv4"
+            "generated/drb-ra-IPC2s-30day.ipv4"
+            "generated/myip-ms-latest-blacklist.ipv4"
+          )
+          if git diff --quiet -- "${output_files[@]}"; then
+            echo "No feed changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "${output_files[@]}"
+          git commit -m "Update normalized IPv4 feeds"
+          git push origin HEAD:main
