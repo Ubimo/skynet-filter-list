@@ -30,7 +30,7 @@ The repository must be public so that the router can retrieve the raw file witho
 ## Source selection
 
 The list favors current, directly maintained feeds over old snapshots and
-duplicate mirrors. IPsum uses level 3 instead of level 1, and the AbuseIPDB
+duplicate mirrors. IPsum uses level 2 instead of level 1, and the AbuseIPDB
 feed uses a seven-day instead of a 30-day window. HaGeZi's Threat Intelligence
 Feed supplements the remaining sources. See `AUDIT.md` for the complete
 pruning record and measured entry counts.
