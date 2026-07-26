@@ -7,12 +7,15 @@ https://iplists.firehol.org/files/coinbl_hosts_browser.ipset
 https://iplists.firehol.org/files/cybercrime.ipset
 https://iplists.firehol.org/files/dshield_1d.netset
 https://iplists.firehol.org/files/dyndns_ponmocup.ipset
+https://iplists.firehol.org/files/et_block.netset
 https://iplists.firehol.org/files/et_compromised.ipset
 https://iplists.firehol.org/files/firehol_level1.netset
+https://iplists.firehol.org/files/firehol_level2.netset
 https://iplists.firehol.org/files/firehol_level3.netset
 https://iplists.firehol.org/files/firehol_webserver.netset
 https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset
 https://iplists.firehol.org/files/myip.ipset
+https://iplists.firehol.org/files/spamhaus_drop.netset
 https://lists.blocklist.de/lists/strongips.txt
 https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/generated/myip-ms-latest-blacklist.ipv4
 https://raw.githubusercontent.com/jumpsmm7/GeneratedAdblock/master/IPlist.list
