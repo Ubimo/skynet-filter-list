@@ -80,6 +80,25 @@ jobs:
             "generated/drb-ra-IPC2s-30day.ipv4"
             "generated/myip-ms-latest-blacklist.ipv4"
           )
+
+          # A queued run keeps the SHA from when it was dispatched. Another
+          # serialized run may have updated main before this job starts, so
+          # preserve the freshly generated feeds and move to the latest main
+          # before deciding whether a commit is still needed.
+          temp_dir="$(mktemp -d)"
+          trap 'rm -rf "$temp_dir"' EXIT
+          for output_file in "${output_files[@]}"; do
+            cp -- "$output_file" "$temp_dir/$(basename "$output_file")"
+          done
+
+          git restore -- "${output_files[@]}"
+          git fetch origin main
+          git checkout --detach origin/main
+
+          for output_file in "${output_files[@]}"; do
+            cp -- "$temp_dir/$(basename "$output_file")" "$output_file"
+          done
+
           if git diff --quiet -- "${output_files[@]}"; then
             echo "No feed changes"
             exit 0
