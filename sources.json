@@ -1,0 +1,146 @@
+[
+  {
+    "name": "greensnow",
+    "url": "https://blocklist.greensnow.co/greensnow.txt",
+    "minimum_entries": 1106
+  },
+  {
+    "name": "feodotracker",
+    "url": "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",
+    "minimum_entries": 1
+  },
+  {
+    "name": "binarydefense",
+    "url": "https://www.binarydefense.com/banlist.txt",
+    "minimum_entries": 663
+  },
+  {
+    "name": "firehol-blocklist-net-ua",
+    "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
+    "minimum_entries": 44137
+  },
+  {
+    "name": "firehol-ciarmy",
+    "url": "https://iplists.firehol.org/files/ciarmy.ipset",
+    "minimum_entries": 3750
+  },
+  {
+    "name": "firehol-cybercrime",
+    "url": "https://iplists.firehol.org/files/cybercrime.ipset",
+    "minimum_entries": 115
+  },
+  {
+    "name": "firehol-dshield-1d",
+    "url": "https://iplists.firehol.org/files/dshield_1d.netset",
+    "minimum_entries": 6
+  },
+  {
+    "name": "firehol-et-block",
+    "url": "https://iplists.firehol.org/files/et_block.netset",
+    "minimum_entries": 407
+  },
+  {
+    "name": "firehol-et-compromised",
+    "url": "https://iplists.firehol.org/files/et_compromised.ipset",
+    "minimum_entries": 142
+  },
+  {
+    "name": "firehol-level1",
+    "url": "https://iplists.firehol.org/files/firehol_level1.netset",
+    "minimum_entries": 1167,
+    "allowed_special": [
+      "0.0.0.0/8",
+      "10.0.0.0/8",
+      "100.64.0.0/10",
+      "127.0.0.0/8",
+      "169.254.0.0/16",
+      "172.16.0.0/12",
+      "192.0.0.0/24",
+      "192.0.2.0/24",
+      "192.168.0.0/16",
+      "198.18.0.0/15",
+      "198.51.100.0/24",
+      "224.0.0.0/3"
+    ],
+    "policy_note": "Exact intentional fullbogons prefixes from FireHOL level1; no blanket special-use exemption."
+  },
+  {
+    "name": "firehol-level2",
+    "url": "https://iplists.firehol.org/files/firehol_level2.netset",
+    "minimum_entries": 4692
+  },
+  {
+    "name": "firehol-level3",
+    "url": "https://iplists.firehol.org/files/firehol_level3.netset",
+    "minimum_entries": 3352
+  },
+  {
+    "name": "firehol-webserver",
+    "url": "https://iplists.firehol.org/files/firehol_webserver.netset",
+    "minimum_entries": 313
+  },
+  {
+    "name": "firehol-ciarmy-malicious",
+    "url": "https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset",
+    "minimum_entries": 3094
+  },
+  {
+    "name": "firehol-myip",
+    "url": "https://iplists.firehol.org/files/myip.ipset",
+    "minimum_entries": 345
+  },
+  {
+    "name": "firehol-spamhaus-drop",
+    "url": "https://iplists.firehol.org/files/spamhaus_drop.netset",
+    "minimum_entries": 401
+  },
+  {
+    "name": "blocklist-de-strongips",
+    "url": "https://lists.blocklist.de/lists/strongips.txt",
+    "minimum_entries": 89
+  },
+  {
+    "name": "myip-ms-latest-blacklist",
+    "url": "https://myip.ms/files/blacklist/general/latest_blacklist.txt",
+    "minimum_entries": 100,
+    "allow_ipv6": true
+  },
+  {
+    "name": "ipsum-level2",
+    "url": "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt",
+    "minimum_entries": 8155
+  },
+  {
+    "name": "emerging-block-ips",
+    "url": "https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt",
+    "minimum_entries": 433
+  },
+  {
+    "name": "interserver-iprbl",
+    "url": "https://sigs.interserver.net/iprbl.txt",
+    "minimum_entries": 1069
+  },
+  {
+    "name": "blocklist-de-export-ips-all",
+    "url": "https://www.blocklist.de/downloads/export-ips_all.txt",
+    "minimum_entries": 1000,
+    "allow_ipv6": true
+  },
+  {
+    "name": "abuseipdb-s100-7d",
+    "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4",
+    "minimum_entries": 20387
+  },
+  {
+    "name": "drb-ra-IPC2s-30day",
+    "url": "https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv",
+    "minimum_entries": 10,
+    "parser": "csv",
+    "allow_ipv6": true
+  },
+  {
+    "name": "hagezi-tif",
+    "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt",
+    "minimum_entries": 17125
+  }
+]

@@ -1,176 +1,128 @@
+"""Refresh independent validated snapshots, retaining good data for at most 72h."""
 from __future__ import annotations
 
-import csv
-from dataclasses import dataclass
-import io
-import ipaddress
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
+import json
 from pathlib import Path
-from typing import Callable, Iterable
-import urllib.request
 
-
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-USER_AGENT = "skynet-filter-list-updater/2.0"
-MAX_SOURCE_BYTES = 64 * 1024 * 1024
-
-
-@dataclass(frozen=True)
-class Feed:
-    source_url: str
-    output_file: Path
-    parser: Callable[
-        [str],
-        tuple[set[ipaddress.IPv4Network], int],
-    ]
-    minimum_ipv4_entries: int
-
-
-def parse_first_field(
-    body: str,
-) -> tuple[set[ipaddress.IPv4Network], int]:
-    networks: set[ipaddress.IPv4Network] = set()
-    ignored_ipv6 = 0
-    for line in body.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith(("#", ";", "!")):
-            continue
-        first_field = stripped.split(maxsplit=1)[0]
-        try:
-            network = ipaddress.ip_network(first_field, strict=False)
-        except ValueError:
-            continue
-        if isinstance(network, ipaddress.IPv4Network):
-            networks.add(network)
-        else:
-            ignored_ipv6 += 1
-    return networks, ignored_ipv6
-
-
-def parse_csv_first_column(
-    body: str,
-) -> tuple[set[ipaddress.IPv4Network], int]:
-    networks: set[ipaddress.IPv4Network] = set()
-    ignored_ipv6 = 0
-    for row in csv.reader(io.StringIO(body)):
-        if not row:
-            continue
-        try:
-            network = ipaddress.ip_network(row[0].strip(), strict=False)
-        except ValueError:
-            continue
-        if isinstance(network, ipaddress.IPv4Network):
-            networks.add(network)
-        else:
-            ignored_ipv6 += 1
-    return networks, ignored_ipv6
-
-
-FEEDS = (
-    Feed(
-        source_url=(
-            "https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/"
-            "master/feeds/IPC2s-30day.csv"
-        ),
-        output_file=(
-            REPOSITORY_ROOT
-            / "generated"
-            / "drb-ra-IPC2s-30day.ipv4"
-        ),
-        parser=parse_csv_first_column,
-        minimum_ipv4_entries=10,
-    ),
-    Feed(
-        source_url=(
-            "https://myip.ms/files/blacklist/general/"
-            "latest_blacklist.txt"
-        ),
-        output_file=(
-            REPOSITORY_ROOT
-            / "generated"
-            / "myip-ms-latest-blacklist.ipv4"
-        ),
-        parser=parse_first_field,
-        minimum_ipv4_entries=100,
-    ),
-    Feed(
-        source_url=(
-            "https://www.blocklist.de/downloads/export-ips_all.txt"
-        ),
-        output_file=(
-            REPOSITORY_ROOT
-            / "generated"
-            / "blocklist-de-export-ips-all.ipv4"
-        ),
-        parser=parse_first_field,
-        minimum_ipv4_entries=1_000,
-    ),
+from feed_policy import (
+    ROOT, RAW_PREFIX, MAX_STALE_HOURS, atomic_write, check_change, digest,
+    download, load_feeds, metrics, parse, serialize,
 )
 
 
-def download(source_url: str, retries: int = 1) -> str:
-    for attempt in range(retries + 1):
-        try:
-            request = urllib.request.Request(
-                source_url,
-                headers={"User-Agent": USER_AGENT},
-            )
-            with urllib.request.urlopen(request, timeout=30) as response:
-                content = response.read(MAX_SOURCE_BYTES + 1)
-            if len(content) > MAX_SOURCE_BYTES:
-                raise ValueError(
-                    f"Source exceeds {MAX_SOURCE_BYTES} bytes: {source_url}"
-                )
-            return content.decode("utf-8-sig", errors="replace")
-        except Exception:
-            if attempt == retries:
-                raise
-    raise AssertionError("unreachable")
+def timestamp(now: datetime) -> str:
+    return now.isoformat(timespec="seconds")
 
 
-def sort_networks(
-    networks: Iterable[ipaddress.IPv4Network],
-) -> list[ipaddress.IPv4Network]:
-    return sorted(
-        networks,
-        key=lambda network: (
-            int(network.network_address),
-            network.prefixlen,
-        ),
-    )
+def load_state(root: Path) -> dict:
+    path = root / "generated/status.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"sources": {}}
 
 
-def format_network(network: ipaddress.IPv4Network) -> str:
-    if network.prefixlen == network.max_prefixlen:
-        return str(network.network_address)
-    return str(network)
+def previous_snapshot(root: Path, feed: dict, previous: dict, now: datetime):
+    """Only recorded, intact, policy-valid data can be used as a fallback."""
+    if previous.get("baseline_url", previous.get("url")) != feed["url"] or not previous.get("last_success"):
+        return None
+    try:
+        date = datetime.fromisoformat(previous["last_success"])
+        if date.tzinfo is None or date > now:
+            return None
+        body = (root / f"generated/{feed['name']}.ipv4").read_text(encoding="utf-8")
+        if digest(body) != previous["sha256"]:
+            return None
+        parsed = parse(body, feed, published=True)
+        if serialize(parsed.networks) != body or metrics(parsed.networks, feed) != previous["metrics"]:
+            return None
+        return body, date
+    except (ValueError, KeyError, OSError):
+        return None
+
+
+def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
+    old = previous_snapshot(root, feed, previous, now)
+    name = feed["name"]
+    try:
+        parsed = parse(fetch(feed["url"]), feed)
+        current = metrics(parsed.networks, feed)
+        if previous.get("last_success") and old is None:
+            raise ValueError("Recorded baseline is missing, corrupt or incompatible with policy")
+        if old:
+            check_change(current, previous["metrics"])
+        body = serialize(parsed.networks)
+        record = {
+            "url": feed["url"], "status": "ok", "last_success": timestamp(now),
+            "checked_at": timestamp(now), "sha256": digest(body), "metrics": current,
+            "excluded_ipv6": parsed.ipv6, "excluded_special": parsed.excluded_special,
+            "error": None,
+        }
+        return name, record, body, True
+    except Exception as error:
+        active = old is not None and now - old[1] <= timedelta(hours=MAX_STALE_HOURS)
+        record = dict(previous) if previous else {"last_success": None}
+        record["url"] = feed["url"]
+        if previous.get("last_success") and old is None:
+            record["baseline_invalid"] = True
+            record["baseline_url"] = previous.get("baseline_url", previous["url"])
+        record.update(status="stale" if active else "disabled", checked_at=timestamp(now),
+                      error=f"{type(error).__name__}: {error}")
+        return name, record, None, active
+
+
+def render_report(feeds: list[dict], state: dict) -> str:
+    lines = [
+        "# Current feed audit", "", "Automatically generated; historical notes are in `AUDIT-HISTORY.md`.", "",
+        f"- Checked at: {state['checked_at']}",
+        f"- Configured sources: {len(feeds)}",
+        f"- Active sources: {sum(r['status'] != 'disabled' for r in state['sources'].values())}",
+        f"- Maximum fallback age: {MAX_STALE_HOURS} hours", "",
+        "Counts are unique IPv4/CIDR entries per source, not unique addresses across sources.",
+        "Last success means successful retrieval and validation, not an upstream observation date.", "",
+        "| Source | State | Entries | IPv6 excluded | Special-use excluded | Last success |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for feed in feeds:
+        r = state["sources"][feed["name"]]
+        lines.append(f"| [{feed['name']}]({feed['url']}) | {r['status']} | "
+                     f"{r.get('metrics', {}).get('entries', 0)} | {r.get('excluded_ipv6', 0)} | "
+                     f"{r.get('excluded_special', 0)} | {r.get('last_success') or 'never'} |")
+    lines += ["", "Failure details and content SHA-256 hashes are in `generated/status.json`.", ""]
+    return "\n".join(lines)
+
+
+def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, workers: int = 8) -> bool:
+    now = now or datetime.now(timezone.utc)
+    feeds = load_feeds(root)
+    previous = load_state(root)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        results = list(executor.map(
+            lambda feed: refresh_one(root, feed, previous["sources"].get(feed["name"], {}), now, fetch), feeds,
+        ))
+    state = {"checked_at": timestamp(now), "sources": {}}
+    manifest = []
+    degraded = False
+    for name, record, body, active in results:
+        state["sources"][name] = record
+        if body is not None:
+            atomic_write(root / f"generated/{name}.ipv4", body)
+        if active:
+            manifest.append(f"{RAW_PREFIX}generated/{name}.ipv4")
+        degraded |= record["status"] != "ok"
+        print(f"{name}: {record['status']}" + (f" ({record['error']})" if record["error"] else ""))
+    atomic_write(root / "filter.list", "\n".join(manifest) + ("\n" if manifest else ""))
+    atomic_write(root / "generated/status.json", json.dumps(state, indent=2) + "\n")
+    atomic_write(root / "AUDIT.md", render_report(feeds, state))
+    atomic_write(root / ".update-result.json", json.dumps({"degraded": degraded}) + "\n")
+    return degraded
 
 
 def main() -> None:
-    parsed_feeds = []
-    for feed in FEEDS:
-        body = download(feed.source_url)
-        networks, ignored_ipv6 = feed.parser(body)
-        if len(networks) < feed.minimum_ipv4_entries:
-            raise RuntimeError(
-                f"Refusing to replace {feed.output_file.name}: only "
-                f"{len(networks)} valid IPv4 entries"
-            )
-        parsed_feeds.append((feed, networks, ignored_ipv6))
-
-    for feed, networks, ignored_ipv6 in parsed_feeds:
-        feed.output_file.parent.mkdir(parents=True, exist_ok=True)
-        feed.output_file.write_text(
-            "".join(
-                f"{format_network(network)}\n"
-                for network in sort_networks(networks)
-            ),
-            encoding="utf-8",
-            newline="\n",
-        )
-        print(
-            f"Wrote {len(networks)} IPv4 entries to "
-            f"{feed.output_file}; excluded {ignored_ipv6} IPv6 entries"
-        )
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root", type=Path, default=ROOT)
+    args = parser.parse_args()
+    raise SystemExit(2 if update(args.root) else 0)
 
 
 if __name__ == "__main__":

@@ -1,164 +1,91 @@
+"""Validate the exact local or immutable remote snapshot, without regenerating it."""
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import as_completed, ThreadPoolExecutor
-from dataclasses import dataclass
-import ipaddress
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
+import json
 from pathlib import Path
-import urllib.request
+import re
+
+from feed_policy import ROOT, RAW_PREFIX, MAX_STALE_HOURS, digest, download, load_feeds, metrics, parse, serialize
+from update_ipv4_feeds import render_report
 
 
-USER_AGENT = "skynet-filter-list-audit/1.0"
-MAX_SOURCE_BYTES = 64 * 1024 * 1024
-REPOSITORY_RAW_PREFIX = (
-    "https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/"
-)
-
-
-@dataclass(frozen=True)
-class SourceAudit:
-    source: str
-    ipv4: int
-    ipv6: int
-    invalid: int
-    error: str | None = None
-
-
-def read_source(
-    source: str,
-    repository_root: Path,
-    timeout: float,
-) -> str:
-    if source.startswith(REPOSITORY_RAW_PREFIX):
-        resolved_root = repository_root.resolve()
-        local_path = (
-            resolved_root
-            / source.removeprefix(REPOSITORY_RAW_PREFIX)
-        ).resolve()
-        try:
-            local_path.relative_to(resolved_root)
-        except ValueError:
-            raise ValueError(
-                f"Local source path escapes repository: {source}"
-            ) from None
-        if local_path.is_file():
-            return local_path.read_text(
-                encoding="utf-8-sig",
-                errors="replace",
-            )
-
-    request = urllib.request.Request(
-        source,
-        headers={"User-Agent": USER_AGENT},
-    )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        content = response.read(MAX_SOURCE_BYTES + 1)
-    if len(content) > MAX_SOURCE_BYTES:
-        raise ValueError(
-            f"Source exceeds {MAX_SOURCE_BYTES} bytes: {source}"
-        )
-    return content.decode("utf-8-sig", errors="replace")
-
-
-def audit_source(
-    source: str,
-    repository_root: Path,
-    timeout: float,
-    retries: int,
-) -> SourceAudit:
-    for attempt in range(retries + 1):
-        try:
-            body = read_source(
-                source,
-                repository_root,
-                timeout,
-            )
-            break
-        except Exception as error:
-            if attempt == retries:
-                return SourceAudit(
-                    source=source,
-                    ipv4=0,
-                    ipv6=0,
-                    invalid=0,
-                    error=f"{type(error).__name__}: {error}",
-                )
-
-    ipv4 = 0
-    ipv6 = 0
-    invalid = 0
-    for line in body.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith(("#", ";", "!")):
+def validate(root: Path = ROOT, *, now: datetime | None = None, read=None) -> None:
+    # In historical/PR validation use the recorded audit time; --current enforces
+    # wall-clock age for publication and monitoring.
+    read = read or (lambda path: (root / path).read_text(encoding="utf-8"))
+    feeds = load_feeds(root)
+    state = json.loads(read("generated/status.json"))
+    checked = datetime.fromisoformat(state["checked_at"])
+    now = now or checked
+    if checked.tzinfo is None or checked > now:
+        raise ValueError("Invalid audit timestamp")
+    names = {feed["name"] for feed in feeds}
+    if set(state["sources"]) != names:
+        raise ValueError("Source status does not match configured sources")
+    manifest = read("filter.list").splitlines()
+    if not manifest or len(manifest) != len(set(manifest)):
+        raise ValueError("Empty manifest or duplicate source URLs")
+    expected = []
+    active = []
+    for feed in feeds:
+        record = state["sources"][feed["name"]]
+        if record["url"] != feed["url"] or record["status"] not in ("ok", "stale", "disabled"):
+            raise ValueError(f"Invalid status: {feed['name']}")
+        if record["checked_at"] != state["checked_at"]:
+            raise ValueError("Source was not checked in this snapshot")
+        if record["status"] == "disabled":
+            if not record.get("error"):
+                raise ValueError("Disabled source must explain its failure")
             continue
-        first_field = stripped.split(maxsplit=1)[0]
-        try:
-            network = ipaddress.ip_network(first_field, strict=False)
-        except ValueError:
-            invalid += 1
-            continue
-        if isinstance(network, ipaddress.IPv4Network):
-            ipv4 += 1
-        else:
-            ipv6 += 1
+        last = datetime.fromisoformat(record["last_success"])
+        if last.tzinfo is None or last > checked or now - last > timedelta(hours=MAX_STALE_HOURS):
+            raise ValueError(f"Expired or invalid fallback: {feed['name']}")
+        if record["status"] == "ok" and (last != checked or record.get("error")):
+            raise ValueError("Healthy source has inconsistent status")
+        if record["status"] == "stale" and not record.get("error"):
+            raise ValueError("Stale source must explain its failure")
+        path = f"generated/{feed['name']}.ipv4"
+        expected.append(RAW_PREFIX + path)
+        active.append((feed, record, path))
+    if manifest != expected:
+        raise ValueError("Manifest differs from validated active sources")
 
-    return SourceAudit(source, ipv4, ipv6, invalid)
+    def verify(item):
+        feed, record, path = item
+        body = read(path)
+        parsed = parse(body, feed, published=True)
+        if body != serialize(parsed.networks):
+            raise ValueError(f"Noncanonical or duplicate entries: {path}")
+        if digest(body) != record["sha256"] or metrics(parsed.networks, feed) != record["metrics"]:
+            raise ValueError(f"Content/hash/metrics mismatch: {path}")
+        return len(parsed.networks)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        counts = list(executor.map(verify, active))
+    if read("AUDIT.md") != render_report(feeds, state):
+        raise ValueError("AUDIT.md is not synchronized with status.json")
+    print(f"Validated {len(active)} active sources, {sum(counts)} IPv4/CIDR entries; exact manifest, hashes and report match")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "manifest",
-        nargs="?",
-        type=Path,
-        default=Path(__file__).resolve().parents[1] / "filter.list",
-    )
-    parser.add_argument("--timeout", type=float, default=30)
-    parser.add_argument("--retries", type=int, default=1)
-    parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument("--current", action="store_true")
+    parser.add_argument("--remote-ref", help="Verify raw GitHub content at this immutable commit SHA")
     args = parser.parse_args()
-
-    sources = [
-        line.strip()
-        for line in args.manifest.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.lstrip().startswith("#")
-    ]
-    repository_root = args.manifest.resolve().parent
-    with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = {
-            executor.submit(
-                audit_source,
-                source,
-                repository_root,
-                args.timeout,
-                args.retries,
-            ): source
-            for source in sources
-        }
-        results = {
-            futures[future]: future.result()
-            for future in as_completed(futures)
-        }
-    audits = [results[source] for source in sources]
-
-    print("IPv4\tIPv6\tInvalid\tSource\tError")
-    for audit in audits:
-        print(
-            f"{audit.ipv4}\t{audit.ipv6}\t{audit.invalid}\t"
-            f"{audit.source}\t{audit.error or ''}"
-        )
-
-    total_ipv4 = sum(audit.ipv4 for audit in audits)
-    total_ipv6 = sum(audit.ipv6 for audit in audits)
-    print(f"TOTAL\t{total_ipv4}\t{total_ipv6}")
-    if any(audit.error for audit in audits):
-        raise SystemExit(1)
-    if any(audit.ipv4 == 0 for audit in audits):
-        raise SystemExit(1)
-    if any(audit.invalid for audit in audits):
-        raise SystemExit(1)
-    if total_ipv6:
-        raise SystemExit(2)
+    read = None
+    if args.remote_ref:
+        if not re.fullmatch(r"[0-9a-f]{40}", args.remote_ref):
+            parser.error("--remote-ref requires a full commit SHA")
+        prefix = RAW_PREFIX.replace("/main/", f"/{args.remote_ref}/")
+        # Check config too, so local policy cannot accidentally verify another tree.
+        if download(prefix + "sources.json") != (args.root / "sources.json").read_text(encoding="utf-8"):
+            raise ValueError("Remote source configuration differs from checkout")
+        read = lambda path: download(prefix + path)
+    validate(args.root, now=datetime.now(timezone.utc) if args.current else None, read=read)
 
 
 if __name__ == "__main__":

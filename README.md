@@ -1,86 +1,114 @@
 # Skynet Custom Filter List
 
-Curated copy of the list from
-[`jumpsmm7/GeneratedAdblock`](https://github.com/jumpsmm7/GeneratedAdblock).
+Curated IPv4 threat feeds for SkyNet. All operational sources are served as
+validated snapshots from this repository, so upstream errors cannot bypass
+validation on the router.
 
-## Files
-
-- `filter.list`: operational list containing 25 IPv4-only sources successfully validated on July 23, 2026
-- `generated/*.ipv4`: SkyNet-compatible versions of three upstream feeds that require normalization
-- `scripts/update_ipv4_feeds.py`: reproducible update of the normalized IPv4 lists
-- `scripts/audit_sources.py`: live validation that rejects operational sources containing IPv6
-- `.github/workflows/update-ipv4-feeds.yml`: pull-request validation and daily feed updates
-- `AUDIT.md`: validation results including IPv4 and excluded IPv6 counts
-
-## Using the list with Skynet
+## Using the list
 
 ```sh
 firewall banmalware https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/filter.list
 ```
 
-The repository must be public so that the router can retrieve the raw file without a GitHub token.
+The URL is unchanged. The repository must remain public. There are 25 configured
+sources; the active count and latest results are generated in [AUDIT.md](AUDIT.md).
+IPsum uses level 2; AbuseIPDB uses its score-100 seven-day feed.
 
-## Intentionally excluded from `filter.list`
+## Source policy
 
-- Tor exit-node lists: Tor relays are not inherently malicious and are outside this list's blocking policy
-- `https://voipbl.org/update`: VoIP/PBX abuse is outside the scope of the protected installation
-- `https://darklist.de/raw.php`: HTTP 200, but currently contains no IP entries
-- `https://iplists.firehol.org/files/normshield_high_attack.ipset`: HTTP 200, but empty and, according to its header, not updated since April 19, 2025
-- `https://www.talosintelligence.com/documents/ip-blacklist`: HTTP 403 with both `Invoke-WebRequest` and `curl`
+`sources.json` is the maintained upstream manifest. `filter.list` is generated and
+contains only this repository's validated `.ipv4` URLs. Do not edit generated
+files by hand. The updater supports whitespace-delimited IPv4/CIDR feeds and the
+C2IntelFeeds CSV format. IPv6 removal is explicitly enabled for the three feeds
+that require it; an unexpected switch to mixed IPv4/IPv6 elsewhere is rejected.
 
-## Source selection
+- Reject default routes and unapproved networks broader than `/12`.
+- Remove unapproved special-use ranges (private, loopback, link-local, CGNAT,
+  documentation, multicast and reserved ranges), including overlapping networks.
+- FireHOL level 1 intentionally contains fullbogons. Only the exact reviewed
+  special-use prefixes in its `allowed_special` setting are retained. This is
+  not a blanket exemption for private addresses or broad public networks.
+- Reject responses with invalid non-comment rows, invalid UTF-8, insufficient
+  entries, or excessive special-use entries (more than 1% of retained entries,
+  with one tolerated). An explicit CSV header is supported.
+- Deduplicate and sort each snapshot. Reject a decrease of more than 50% or an
+  increase of more than 100% in either entry count or unique public IPv4 address
+  coverage relative to the last accepted snapshot. Intentional bogons are
+  excluded from the public-coverage metric. This detects CIDR expansion that
+  entry counts alone would miss. Thresholds are conservative operational
+  defaults, not a guarantee against every bad upstream change.
 
-The list favors current, directly maintained feeds over old snapshots and
-duplicate mirrors. IPsum uses level 2 instead of level 1, and the AbuseIPDB
-feed uses a seven-day instead of a 30-day window. HaGeZi's Threat Intelligence
-Feed supplements the remaining sources. See `AUDIT.md` for the complete
-pruning record and measured entry counts.
+These controls validate format and guard against anomalous changes; they do not
+prove that every public IP is malicious. Content hashes bind each published
+snapshot to its audit record. Source retrieval is bounded to 64 MiB, with a
+30-second socket timeout and one retry. No third-party Python packages are needed.
 
-## Normalized IPv4 feeds
+## Temporary outages and recovery
 
-The upstream feed
-`https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv`
-contains lines in the format `IP,description`. SkyNet, however, only accepts an
-IP address or CIDR as the first whitespace-delimited field. Therefore,
-`filter.list` references the normalized file in `generated/`.
+Each feed updates independently. If a download fails or fails validation, its
+last accepted file is retained only if its hash, contents and policy still
+validate. It stays in `filter.list` for at most **72 hours since the last
+successful retrieval and validation**. On a later update after that deadline it
+is omitted from `filter.list`; its file and baseline remain available for
+inspection and recovery. A new source without a good baseline is omitted on
+failure. A successful, non-anomalous download restores the source automatically.
+Failures do not reset the age or anomaly baseline.
 
-Two other upstream feeds contain both address families:
+Every failure is recorded in `generated/status.json` and makes the workflow fail
+**after** publishing eligible healthy updates. `AUDIT.md` and the Actions job
+summary show `ok`, `stale`, or `disabled`. Configure GitHub Actions failure
+notifications for the repository to receive these alerts.
 
-- `myip.ms/latest_blacklist.txt`
-- `blocklist.de/export-ips_all.txt`
+The 72-hour limit is applied whenever the updater runs. If GitHub Actions stops
+running altogether, it cannot expire a feed or change a router's already loaded
+rules. Monitor the last successful workflow execution. Likewise, a successful
+fetch of an unchanged upstream file does not prove that upstream observations
+are recent; `last_success` is a validation timestamp, not threat-observation age.
+Routers pick up source removal on their next list refresh; existing loaded bans
+remain subject to SkyNet's own refresh/unban behavior.
 
-SkyNet only processes IPv4. The updater removes IPv6 entries from these feeds
-without dropping their IPv4 coverage, and `filter.list` references the
-normalized `.ipv4` files.
+## Updating and validating
 
-GitHub Actions updates all three files every day at 03:17 UTC. Pull requests run
-with read-only repository permissions. Only the scheduled/main-branch update
-job receives `contents: write`, and it stages only the three generated files.
-
-Manual update:
+GitHub Actions schedules an update daily at 03:17 UTC (execution can be delayed).
+It can also be started manually. PR validation is offline and checks the exact
+submitted data; it never regenerates over a proposed change. Tests cover parser
+safety, anomaly rejection, fallback expiry/recovery, corruption and the published
+manifest. The update job checks out current `main`, generates and validates one
+candidate, and pushes only if the base has not changed. A concurrent change to
+`main` causes failure and requires a fresh run, rather than transplanting outputs
+onto untested code. After push, all active raw files, their hashes, the manifest,
+configuration and report are checked at the immutable published commit SHA.
 
 ```sh
+python -m unittest discover -s tests -v
 python scripts/update_ipv4_feeds.py
-python scripts/audit_sources.py
+python scripts/audit_sources.py --current
 ```
 
-## Comparison with ViktorJp/Skynet
+Updater exit codes: `0` means all sources healthy; `2` means a completed update
+with retained/disabled sources; other errors abort the update. Inspect status and
+run the audit even after exit `2`. An empty operational manifest cannot pass the
+publication audit. File replacement is atomic per file; publication uses one Git
+commit for the full set. Run only one local updater per checkout at a time.
 
-On July 13, 2026,
-[`ViktorJp/Skynet/filter.list`](https://github.com/ViktorJp/Skynet/blob/main/filter.list)
-was compared with this list. All 33 sources were reachable; 26 were already included.
+For an intentional large upstream change, inspect the new feed first. To reset
+its baseline, remove **only that source's entry** from `generated/status.json`,
+run the updater and audit, review its counts and diff, and commit the complete
+validated result. The updater never accepts an anomalous change merely because
+it has been retried. Restore a corrupted snapshot from Git history before retrying,
+or explicitly reset its baseline after reviewing the replacement. Policy changes
+that invalidate the old baseline likewise require this deliberate review.
 
-`firehol_webserver.netset` was added. Fully or largely redundant sources, the
-unchanged-since-2019 `maxmind_proxy_fraud.ipset`, and feeds that would broaden
-blocking to the Tor network were not added. See `AUDIT.md` for details.
+## Exclusions and history
 
-## Maintenance
+- `jumpsmm7/GeneratedAdblock/IPlist.list` was removed on September 10, 2026:
+  the review found only two entries, one in reserved `240.0.0.0/4` space,
+  compared with 290 entries in the July audit.
+- Dedicated Tor exit lists are excluded: Tor use alone is not malicious.
+- VoIP/PBX-specific feeds are outside the protected installation's scope.
+- Previously rejected empty, retired or inaccessible feeds remain excluded.
 
-Add new sources to `filter.list`, one per line. Before using a source, verify:
-
-1. It returns HTTP 2xx without authentication.
-2. Every address or CIDR in the first field is IPv4; mixed IPv4/IPv6 feeds must be normalized first.
-3. The response contains at least one SkyNet-compatible IPv4 address or CIDR in the first field.
-4. The response is not a login, error, or HTML page.
-5. The source is stable and intended for automated retrieval.
-6. The source does not broadly block privacy infrastructure solely because of its role.
+[AUDIT-HISTORY.md](AUDIT-HISTORY.md) preserves the July 2026 audit as historical
+context. It does not describe today's source selection. Current upstream URLs,
+minimum counts and exact exceptions are in [sources.json](sources.json); current
+measured results are in [AUDIT.md](AUDIT.md).

@@ -1,4 +1,4 @@
-name: Update normalized IPv4 feeds
+name: Update validated IPv4 feeds
 
 on:
   schedule:
@@ -6,105 +6,105 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - .github/workflows/update-ipv4-feeds.yml
+      - .github/workflows/**
+      - scripts/**
+      - tests/**
+      - sources.json
       - filter.list
-      - scripts/audit_sources.py
-      - scripts/update_ipv4_feeds.py
-      - tests/test_ipv4_feeds.py
+      - generated/**
+      - AUDIT.md
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - .github/workflows/update-ipv4-feeds.yml
+      - .github/workflows/**
+      - scripts/**
+      - tests/**
+      - sources.json
       - filter.list
-      - scripts/audit_sources.py
-      - scripts/update_ipv4_feeds.py
-      - tests/test_ipv4_feeds.py
+      - generated/**
+      - AUDIT.md
 
 permissions:
   contents: read
 
 concurrency:
-  group: update-normalized-ipv4-feeds
+  group: ipv4-feeds-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
   cancel-in-progress: false
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
 
 jobs:
   validate:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-
+    timeout-minutes: 15
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Run unit tests
-        run: python3 -m unittest discover -s tests -v
-
-      - name: Regenerate normalized feeds
-        run: python3 scripts/update_ipv4_feeds.py
-
-      - name: Audit all operational sources
-        run: python3 scripts/audit_sources.py --timeout 45 --retries 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - name: Test submitted files without overwriting them or contacting upstreams
+        run: python -m unittest discover -s tests -v
+      - name: Audit exact submitted snapshot
+        run: python scripts/audit_sources.py
 
   update:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: write
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          fetch-depth: 0
-
-      - name: Run unit tests
-        run: python3 -m unittest discover -s tests -v
-
-      - name: Download, validate and normalize feeds
-        run: python3 scripts/update_ipv4_feeds.py
-
-      - name: Audit all operational sources
-        run: python3 scripts/audit_sources.py --timeout 45 --retries 1
-
-      - name: Commit changed feeds
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - name: Run regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Refresh independent sources
+        id: refresh
+        continue-on-error: true
+        run: python scripts/update_ipv4_feeds.py
+      - name: Validate exact candidate, including bounded fallbacks
+        run: |
+          test -f .update-result.json
+          python scripts/audit_sources.py --current
+      - name: Publish only the tested tree
+        id: publish
         shell: bash
         run: |
           set -euo pipefail
-          output_files=(
-            "generated/blocklist-de-export-ips-all.ipv4"
-            "generated/drb-ra-IPC2s-30day.ipv4"
-            "generated/myip-ms-latest-blacklist.ipv4"
-          )
-
-          # A queued run keeps the SHA from when it was dispatched. Another
-          # serialized run may have updated main before this job starts, so
-          # preserve the freshly generated feeds and move to the latest main
-          # before deciding whether a commit is still needed.
-          temp_dir="$(mktemp -d)"
-          trap 'rm -rf "$temp_dir"' EXIT
-          for output_file in "${output_files[@]}"; do
-            cp -- "$output_file" "$temp_dir/$(basename "$output_file")"
-          done
-
-          git restore -- "${output_files[@]}"
           git fetch origin main
-          git checkout --detach origin/main
-
-          for output_file in "${output_files[@]}"; do
-            cp -- "$temp_dir/$(basename "$output_file")" "$output_file"
-          done
-
-          if git diff --quiet -- "${output_files[@]}"; then
-            echo "No feed changes"
-            exit 0
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+            echo "main changed during validation; rerun the workflow on the new tree."
+            exit 1
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- "${output_files[@]}"
-          git commit -m "Update normalized IPv4 feeds"
-          git push origin HEAD:main
+          git add -- generated/*.ipv4 generated/status.json filter.list AUDIT.md
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Update validated IPv4 snapshots and source health"
+            # No force, reset, rebase or copying old outputs onto a newer main.
+            git push origin HEAD:main
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Verify published raw files at the exact commit
+        env:
+          PUBLISHED_SHA: ${{ steps.publish.outputs.sha }}
+        run: python scripts/audit_sources.py --remote-ref "$PUBLISHED_SHA" --current
+      - name: Report source failures after publishing healthy updates
+        if: always()
+        env:
+          REFRESH_OUTCOME: ${{ steps.refresh.outcome }}
+        run: |
+          if [ -f AUDIT.md ]; then cat AUDIT.md >> "$GITHUB_STEP_SUMMARY"; fi
+          if [ "$REFRESH_OUTCOME" != "success" ]; then
+            echo "One or more feeds failed. See generated/status.json; healthy feeds were eligible for publication."
+            exit 1
+          fi
