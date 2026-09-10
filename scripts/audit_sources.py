@@ -8,8 +8,10 @@ import json
 from pathlib import Path
 import re
 
-from feed_policy import ROOT, RAW_PREFIX, MAX_STALE_HOURS, digest, download, load_feeds, metrics, parse, serialize
-from update_ipv4_feeds import render_report
+from feed_policy import ROOT, RAW_PREFIX, MAX_STALE_HOURS, digest, download, load_feeds, metrics, parse, snapshot_body
+from update_ipv4_feeds import combined_body, render_report
+from feed_analysis import combine, load_allowlist
+from feed_freshness import fallback_fresh
 
 
 def validate(root: Path = ROOT, *, now: datetime | None = None, read=None) -> None:
@@ -28,16 +30,15 @@ def validate(root: Path = ROOT, *, now: datetime | None = None, read=None) -> No
     manifest = read("filter.list").splitlines()
     if not manifest or len(manifest) != len(set(manifest)):
         raise ValueError("Empty manifest or duplicate source URLs")
-    expected = []
     active = []
     for feed in feeds:
         record = state["sources"][feed["name"]]
-        if record["url"] != feed["url"] or record["status"] not in ("ok", "stale", "disabled"):
+        if record["url"] != feed["url"] or record["status"] not in ("ok", "stale", "disabled", "quarantined"):
             raise ValueError(f"Invalid status: {feed['name']}")
         if record["checked_at"] != state["checked_at"]:
             raise ValueError("Source was not checked in this snapshot")
-        if record["status"] == "disabled":
-            if not record.get("error"):
+        if record["status"] in ('disabled', 'quarantined'):
+            if not record.get("error") or record.get('included'):
                 raise ValueError("Disabled source must explain its failure")
             continue
         last = datetime.fromisoformat(record["last_success"])
@@ -47,27 +48,45 @@ def validate(root: Path = ROOT, *, now: datetime | None = None, read=None) -> No
             raise ValueError("Healthy source has inconsistent status")
         if record["status"] == "stale" and not record.get("error"):
             raise ValueError("Stale source must explain its failure")
+        if not fallback_fresh(record, feed, now):
+            raise ValueError(f"Expired or missing provider timestamp: {feed['name']}")
+        if not record.get('included') and not (feed.get('redundancy_candidate') and
+                state.get('redundancy', {}).get(feed['name'], {}).get('suppressed')):
+            raise ValueError('Source omitted without redundancy evidence')
         path = f"generated/{feed['name']}.ipv4"
-        expected.append(RAW_PREFIX + path)
         active.append((feed, record, path))
-    if manifest != expected:
+    if manifest != [RAW_PREFIX + 'generated/combined.ipv4']:
         raise ValueError("Manifest differs from validated active sources")
 
     def verify(item):
         feed, record, path = item
         body = read(path)
         parsed = parse(body, feed, published=True)
-        if body != serialize(parsed.networks):
+        if body != snapshot_body(parsed.networks, record):
             raise ValueError(f"Noncanonical or duplicate entries: {path}")
         if digest(body) != record["sha256"] or metrics(parsed.networks, feed) != record["metrics"]:
             raise ValueError(f"Content/hash/metrics mismatch: {path}")
-        return len(parsed.networks)
+        return feed['name'], parsed.networks
 
     with ThreadPoolExecutor(max_workers=8) as executor:
-        counts = list(executor.map(verify, active))
+        networks = dict(executor.map(verify, active))
+    exceptions, expired = load_allowlist(root, checked, read=read)
+    if exceptions != state['allowlist_active'] or expired != state['allowlist_expired']:
+        raise ValueError('Exception state differs from allowlist.json')
+    if load_allowlist(root, now, read=read)[0] != exceptions:
+        raise ValueError('Exception expired between generation and publication; regenerate')
+    combined = combine(networks.values(), exceptions)
+    selected = combine([ns for name, ns in networks.items() if state['sources'][name]['included']], exceptions)
+    if combined != selected:
+        raise ValueError('Suppression loses coverage')
+    body = read('generated/combined.ipv4')
+    if not combined or body != combined_body(combined, state['sources']):
+        raise ValueError('Combined file does not exactly equal validated sources minus exceptions')
+    if state['combined'] != {'entries': len(combined), 'sha256': digest(body)}:
+        raise ValueError('Combined hash/count mismatch')
     if read("AUDIT.md") != render_report(feeds, state):
         raise ValueError("AUDIT.md is not synchronized with status.json")
-    print(f"Validated {len(active)} active sources, {sum(counts)} IPv4/CIDR entries; exact manifest, hashes and report match")
+    print(f"Validated {len(active)} usable sources, {len(combined)} combined entries; exact coverage, exceptions, hashes and report match")
 
 
 def main() -> None:

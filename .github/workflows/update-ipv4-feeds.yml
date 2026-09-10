@@ -10,6 +10,7 @@ on:
       - scripts/**
       - tests/**
       - sources.json
+      - allowlist.json
       - filter.list
       - generated/**
       - AUDIT.md
@@ -20,6 +21,7 @@ on:
       - scripts/**
       - tests/**
       - sources.json
+      - allowlist.json
       - filter.list
       - generated/**
       - AUDIT.md

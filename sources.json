@@ -7,7 +7,12 @@
   {
     "name": "feodotracker",
     "url": "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",
-    "minimum_entries": 1
+    "minimum_entries": 1,
+    "freshness": {
+      "type": "iso_comment",
+      "max_age_hours": 72
+    },
+    "quarantine_on_stale": true
   },
   {
     "name": "binarydefense",
@@ -17,32 +22,59 @@
   {
     "name": "firehol-blocklist-net-ua",
     "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
-    "minimum_entries": 44137
+    "minimum_entries": 44137,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    }
   },
   {
     "name": "firehol-ciarmy",
     "url": "https://iplists.firehol.org/files/ciarmy.ipset",
-    "minimum_entries": 3750
+    "minimum_entries": 3750,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    },
+    "redundancy_candidate": true
   },
   {
     "name": "firehol-cybercrime",
     "url": "https://iplists.firehol.org/files/cybercrime.ipset",
-    "minimum_entries": 115
+    "minimum_entries": 115,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    }
   },
   {
     "name": "firehol-dshield-1d",
     "url": "https://iplists.firehol.org/files/dshield_1d.netset",
-    "minimum_entries": 6
+    "minimum_entries": 6,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    },
+    "redundancy_candidate": true
   },
   {
     "name": "firehol-et-block",
     "url": "https://iplists.firehol.org/files/et_block.netset",
-    "minimum_entries": 407
+    "minimum_entries": 407,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    },
+    "redundancy_candidate": true
   },
   {
     "name": "firehol-et-compromised",
     "url": "https://iplists.firehol.org/files/et_compromised.ipset",
-    "minimum_entries": 142
+    "minimum_entries": 142,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    }
   },
   {
     "name": "firehol-level1",
@@ -62,37 +94,67 @@
       "198.51.100.0/24",
       "224.0.0.0/3"
     ],
-    "policy_note": "Exact intentional fullbogons prefixes from FireHOL level1; no blanket special-use exemption."
+    "policy_note": "Exact intentional fullbogons prefixes from FireHOL level1; no blanket special-use exemption.",
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    }
   },
   {
     "name": "firehol-level2",
     "url": "https://iplists.firehol.org/files/firehol_level2.netset",
-    "minimum_entries": 4692
+    "minimum_entries": 4692,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    }
   },
   {
     "name": "firehol-level3",
     "url": "https://iplists.firehol.org/files/firehol_level3.netset",
-    "minimum_entries": 3352
+    "minimum_entries": 3352,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    }
   },
   {
     "name": "firehol-webserver",
     "url": "https://iplists.firehol.org/files/firehol_webserver.netset",
-    "minimum_entries": 313
+    "minimum_entries": 313,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    }
   },
   {
     "name": "firehol-ciarmy-malicious",
     "url": "https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset",
-    "minimum_entries": 3094
+    "minimum_entries": 3094,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    }
   },
   {
     "name": "firehol-myip",
     "url": "https://iplists.firehol.org/files/myip.ipset",
-    "minimum_entries": 345
+    "minimum_entries": 345,
+    "freshness": {
+      "type": "firehol",
+      "max_age_hours": 168
+    },
+    "redundancy_candidate": true
   },
   {
-    "name": "firehol-spamhaus-drop",
-    "url": "https://iplists.firehol.org/files/spamhaus_drop.netset",
-    "minimum_entries": 401
+    "name": "spamhaus-drop",
+    "url": "https://www.spamhaus.org/drop/drop_v4.json",
+    "minimum_entries": 401,
+    "freshness": {
+      "type": "spamhaus_json",
+      "max_age_hours": 72
+    },
+    "parser": "spamhaus_json"
   },
   {
     "name": "blocklist-de-strongips",
@@ -129,7 +191,11 @@
   {
     "name": "abuseipdb-s100-7d",
     "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4",
-    "minimum_entries": 20387
+    "minimum_entries": 20387,
+    "freshness": {
+      "type": "iso_comment",
+      "max_age_hours": 72
+    }
   },
   {
     "name": "drb-ra-IPC2s-30day",

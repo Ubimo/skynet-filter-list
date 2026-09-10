@@ -114,6 +114,7 @@ class UpdateTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.feeds = [FEED, dict(FEED, name='two', url='https://example.com/two')]
         (self.root / 'sources.json').write_text(json.dumps(self.feeds), encoding='utf-8')
+        (self.root / 'allowlist.json').write_text('[]', encoding='utf-8')
 
     def run_update(self, now=NOW, bodies=None):
         bodies = bodies or {feed['url']: BODY for feed in self.feeds}
@@ -154,7 +155,7 @@ class UpdateTests(unittest.TestCase):
             self.assertEqual(self.state()['one']['status'], expected)
             self.assertEqual(self.state()['one']['last_success'], NOW.isoformat(timespec='seconds'))
             self.audit(NOW + timedelta(hours=hours))
-        self.assertNotIn('/one.ipv4', (self.root / 'filter.list').read_text())
+        self.assertFalse(self.state()['one']['included'])
         self.assertTrue((self.root / 'generated/one.ipv4').exists())
 
     def test_recovery_reenables_source(self):
@@ -162,7 +163,7 @@ class UpdateTests(unittest.TestCase):
         self.run_update(NOW + timedelta(hours=73), {self.feeds[0]['url']: OSError('down'), self.feeds[1]['url']: BODY})
         self.assertFalse(self.run_update(NOW + timedelta(hours=74)))
         self.assertEqual(self.state()['one']['status'], 'ok')
-        self.assertIn('/one.ipv4', (self.root / 'filter.list').read_text())
+        self.assertTrue(self.state()['one']['included'])
         self.audit(NOW + timedelta(hours=74))
 
     def test_anomaly_remains_rejected_on_retries(self):
@@ -209,7 +210,7 @@ class UpdateTests(unittest.TestCase):
             self.audit(NOW + timedelta(hours=hours))
 
     def test_empty_and_duplicate_configuration_rejected(self):
-        for config in ([], [FEED, FEED], [dict(FEED, name='../escape')],
+        for config in ([], [FEED, FEED], [dict(FEED, name='../escape')], [dict(FEED, name='combined')],
                        [dict(FEED, allowed_special=['0.0.0.0/0'])]):
             (self.root / 'sources.json').write_text(json.dumps(config))
             with self.assertRaises(ValueError):

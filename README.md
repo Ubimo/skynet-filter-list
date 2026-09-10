@@ -1,83 +1,145 @@
 # Skynet Custom Filter List
 
-Curated IPv4 threat feeds for SkyNet. All operational sources are served as
-validated snapshots from this repository, so upstream errors cannot bypass
-validation on the router.
+Curated IPv4 threat feeds for SkyNet, with automatic validation, freshness checks,
+independent fallback and exact aggregation. All automation runs in GitHub Actions.
 
-## Using the list
+## Router setup
+
+The existing URL remains unchanged:
 
 ```sh
 firewall banmalware https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/filter.list
 ```
 
-The URL is unchanged. The repository must remain public. There are 25 configured
-sources; the active count and latest results are generated in [AUDIT.md](AUDIT.md).
-IPsum uses level 2; AbuseIPDB uses its score-100 seven-day feed.
+`filter.list` now points to **one** file, `generated/combined.ipv4`. It contains the
+exact union of usable source snapshots, minus active exceptions, with duplicates
+and overlapping/adjacent networks collapsed. Aggregation never adds addresses.
+SkyNet needs one data download instead of one per source. Individual snapshots
+remain available for validation, source attribution and automatic recovery.
 
-## Source policy
+See [AUDIT.md](AUDIT.md) for current counts, provider timestamps and the redundancy
+observation table. [generated/status.json](generated/status.json) contains hashes,
+exclusions, turnover measurements, failure reasons and observation state.
 
-`sources.json` is the maintained upstream manifest. `filter.list` is generated and
-contains only this repository's validated `.ipv4` URLs. Do not edit generated
-files by hand. The updater supports whitespace-delimited IPv4/CIDR feeds and the
-C2IntelFeeds CSV format. IPv6 removal is explicitly enabled for the three feeds
-that require it; an unexpected switch to mixed IPv4/IPv6 elsewhere is rejected.
+## Automatic source selection
 
-- Reject default routes and unapproved networks broader than `/12`.
+There are 25 configured sources. `sources.json` is the maintained upstream
+manifest; do not edit generated files. IPsum uses level 2, AbuseIPDB the score-100
+seven-day feed, and Spamhaus DROP is retrieved directly as JSON from Spamhaus.
+Spamhaus copyright, source, provider date and terms are preserved in its snapshot
+and in the combined file.
+
+Feodo's file was dated March 4, 2026 during the September 10 review. It is
+**quarantined while stale**, checked on every update, and automatically becomes
+eligible again only when fresh data passes all validation. Known stale Feodo data
+is not treated as an unexpected job failure. An address from Feodo can still be
+blocked if another eligible source independently includes it.
+
+Four sources are candidates for automatic suppression from the active union:
+
+- `firehol-et-block`
+- `firehol-dshield-1d`
+- `firehol-myip`
+- `firehol-ciarmy`
+
+A candidate must add zero addresses beyond **healthy non-candidate sources** for
+at least 14 elapsed days with at least 14 distinct UTC observation dates. Multiple
+runs on one day count only once. A gap longer than 48 hours, an unhealthy candidate
+or new unique coverage resets its observation. Candidates cannot justify one
+another's removal. A suppressed source continues to be fetched for observation;
+it is automatically included again if it becomes useful or its healthy coverage
+providers fail. The audit proves that suppression does not change the final union.
+No manual follow-up is needed after the observation period. The first possible
+suppression is September 24, 2026, depending on actual run times and observations.
+
+## Safety and freshness
+
+- Reject default routes and unapproved upstream networks broader than `/12`.
 - Remove unapproved special-use ranges (private, loopback, link-local, CGNAT,
-  documentation, multicast and reserved ranges), including overlapping networks.
-- FireHOL level 1 intentionally contains fullbogons. Only the exact reviewed
-  special-use prefixes in its `allowed_special` setting are retained. This is
-  not a blanket exemption for private addresses or broad public networks.
-- Reject responses with invalid non-comment rows, invalid UTF-8, insufficient
-  entries, or excessive special-use entries (more than 1% of retained entries,
-  with one tolerated). An explicit CSV header is supported.
-- Deduplicate and sort each snapshot. Reject a decrease of more than 50% or an
-  increase of more than 100% in either entry count or unique public IPv4 address
-  coverage relative to the last accepted snapshot. Intentional bogons are
-  excluded from the public-coverage metric. This detects CIDR expansion that
-  entry counts alone would miss. Thresholds are conservative operational
-  defaults, not a guarantee against every bad upstream change.
+  documentation, multicast and reserved ranges), including overlaps.
+- FireHOL level 1 intentionally includes fullbogons. Only its exact reviewed
+  special-use prefixes in `allowed_special` are exempt; public ranges are not.
+- Reject invalid non-comment rows, malformed UTF-8, insufficient entries and
+  excessive special-use entries (more than 1% of retained entries, with one
+  tolerated). CSV and Spamhaus JSON have explicit parsers.
+- Reject count or unique public-address coverage outside 0.5x to 2x the last
+  accepted baseline. Bogons are excluded from the public-coverage metric.
+- Also reject turnover above 80% of either the old or the new public-address
+  coverage, even if counts stay identical. `max_churn_ratio` can be explicitly
+  adjusted per source after review. Added/removed address counts and ratios are
+  recorded on successful updates; rejected changes appear in the failure reason.
 
-These controls validate format and guard against anomalous changes; they do not
-prove that every public IP is malicious. Content hashes bind each published
-snapshot to its audit record. Source retrieval is bounded to 64 MiB, with a
-30-second socket timeout and one retry. No third-party Python packages are needed.
+Freshness uses provider metadata, independently of download success:
 
-## Temporary outages and recovery
+| Source type | Provider timestamp | Maximum age |
+|---|---|---:|
+| FireHOL | `Source File Date`, not the mirror's processing date | 168 hours |
+| Spamhaus DROP | JSON metadata timestamp | 72 hours |
+| AbuseIPDB | `Last updated` comment | 72 hours |
+| Feodo | `Last updated` comment | 72 hours |
 
-Each feed updates independently. If a download fails or fails validation, its
-last accepted file is retained only if its hash, contents and policy still
-validate. It stays in `filter.list` for at most **72 hours since the last
-successful retrieval and validation**. On a later update after that deadline it
-is omitted from `filter.list`; its file and baseline remain available for
-inspection and recovery. A new source without a good baseline is omitted on
-failure. A successful, non-anomalous download restores the source automatically.
-Failures do not reset the age or anomaly baseline.
+Missing required timestamps and implausible future dates fail validation. Sources
+without a supported provider timestamp are explicitly shown as `unknown`; the
+system does not invent their data age. Provider dates describe the supplied file,
+not necessarily every observation or component inside an aggregate feed.
 
-Every failure is recorded in `generated/status.json` and makes the workflow fail
-**after** publishing eligible healthy updates. `AUDIT.md` and the Actions job
-summary show `ok`, `stale`, or `disabled`. Configure GitHub Actions failure
-notifications for the repository to receive these alerts.
+The broader prefixes that can result from exact output aggregation are validated
+by full set equivalence to the already checked inputs, rather than applying the
+upstream `/12` guard to the merged file. This preserves safety without preventing
+lossless compression. These controls do not prove that every listed public IP is
+malicious.
 
-The 72-hour limit is applied whenever the updater runs. If GitHub Actions stops
-running altogether, it cannot expire a feed or change a router's already loaded
-rules. Monitor the last successful workflow execution. Likewise, a successful
-fetch of an unchanged upstream file does not prove that upstream observations
-are recent; `last_success` is a validation timestamp, not threat-observation age.
-Routers pick up source removal on their next list refresh; existing loaded bans
-remain subject to SkyNet's own refresh/unban behavior.
+## Outages and recovery
 
-## Updating and validating
+Feeds update independently. A failure retains the last accepted file only when
+its hash and contents remain valid and it is at most **72 hours since successful
+retrieval and validation**. Where a provider date is required, its age limit must
+also hold. Downloading the same outdated file never refreshes its provider age.
+Expired/unusable sources are excluded from the combined file on the next update.
+Their snapshots and baselines remain for diagnosis and recovery. An anomalous
+replacement is not accepted just because it has been retried.
 
-GitHub Actions schedules an update daily at 03:17 UTC (execution can be delayed).
-It can also be started manually. PR validation is offline and checks the exact
-submitted data; it never regenerates over a proposed change. Tests cover parser
-safety, anomaly rejection, fallback expiry/recovery, corruption and the published
-manifest. The update job checks out current `main`, generates and validates one
-candidate, and pushes only if the base has not changed. A concurrent change to
-`main` causes failure and requires a fresh run, rather than transplanting outputs
-onto untested code. After push, all active raw files, their hashes, the manifest,
-configuration and report are checked at the immutable published commit SHA.
+Unexpected failures produce `stale` or `disabled` status and fail the workflow
+**after** eligible healthy updates are published. `quarantined` is the expected
+Feodo stale-data state; `included: false` with healthy status can indicate a
+redundant source under continued observation. All states are visible in the audit.
+
+GitHub Actions runs daily at 03:17 UTC and can be dispatched manually. Execution
+can be delayed. If Actions stops completely, this code cannot expire data or
+change rules already loaded on a router. Router refresh/unban behavior determines
+when changes take effect there. The output is IPv4-only; DNS and IPv6 protection
+require their own configuration.
+
+## Explain a block and add a temporary exception
+
+```sh
+python scripts/lookup_ip.py 8.8.8.8
+```
+
+The lookup prints whether the address is blocked in the published local snapshot,
+which source networks match, whether each source contributes, and any exception
+active at publication. It performs no DNS lookup or other network requests.
+
+`allowlist.json` starts empty. To add an exception, provide a canonical IPv4 host
+or network (`/24` or narrower), a nonempty reason and a timezone-aware expiry:
+
+```json
+[
+  {
+    "cidr": "203.0.113.7/32",
+    "reason": "Example only: replace with the specific verified address",
+    "expires_at": "2026-09-11T18:00:00+00:00"
+  }
+]
+```
+
+This example is not active. Exceptions are subtracted from the combined coverage,
+including when a broader upstream CIDR contains the address. Expired exceptions
+stop applying on the next successful rebuild, and their status remains visible.
+Editing `allowlist.json` triggers the workflow. Do not publish unrelated network
+ranges as exceptions.
+
+## Validation and publication
 
 ```sh
 python -m unittest discover -s tests -v
@@ -85,30 +147,35 @@ python scripts/update_ipv4_feeds.py
 python scripts/audit_sources.py --current
 ```
 
-Updater exit codes: `0` means all sources healthy; `2` means a completed update
-with retained/disabled sources; other errors abort the update. Inspect status and
-run the audit even after exit `2`. An empty operational manifest cannot pass the
-publication audit. File replacement is atomic per file; publication uses one Git
-commit for the full set. Run only one local updater per checkout at a time.
+No third-party Python packages are required. Downloads are bounded to 64 MiB with
+a 30-second socket timeout and one retry. Run only one updater per local checkout.
 
-For an intentional large upstream change, inspect the new feed first. To reset
-its baseline, remove **only that source's entry** from `generated/status.json`,
-run the updater and audit, review its counts and diff, and commit the complete
-validated result. The updater never accepts an anomalous change merely because
-it has been retried. Restore a corrupted snapshot from Git history before retrying,
-or explicitly reset its baseline after reviewing the replacement. Policy changes
-that invalidate the old baseline likewise require this deliberate review.
+PR checks are offline and inspect the exact submitted files without regenerating
+over them. The update job checks out current `main`, refreshes sources, validates
+the exact candidate and pushes only if the base has not changed. It does not copy
+old outputs onto newer code or force-push. After publishing, the raw files are
+verified at the immutable commit SHA, including exact combined coverage, hashes,
+source files, exceptions, manifest and report.
+
+Updater exit codes: `0` means the update completed without unexpected source
+failures (an expected quarantine is allowed); `2` means the update completed with
+stale/disabled feeds; other errors abort. Run the audit even after exit `2`.
+An empty combined list cannot pass publication validation. Individual file writes
+are atomic, and the full candidate is published in one Git commit.
+
+For a reviewed, intentional large source change, remove only that source's record
+from `generated/status.json`, regenerate, audit and review the diff before
+committing. Corrupt baseline files can instead be restored from Git history.
+Changing a source URL or invalidating its old policy requires a reviewed baseline
+reset. Automatic redundancy observation is not a substitute for source selection.
 
 ## Exclusions and history
 
-- `jumpsmm7/GeneratedAdblock/IPlist.list` was removed on September 10, 2026:
-  the review found only two entries, one in reserved `240.0.0.0/4` space,
-  compared with 290 entries in the July audit.
-- Dedicated Tor exit lists are excluded: Tor use alone is not malicious.
-- VoIP/PBX-specific feeds are outside the protected installation's scope.
-- Previously rejected empty, retired or inaccessible feeds remain excluded.
+`jumpsmm7/GeneratedAdblock/IPlist.list` remains excluded after its collapse to two
+entries, including a reserved address, on September 10, 2026. Dedicated Tor exit
+lists and out-of-scope VoIP/PBX feeds remain excluded. No new broad scanner feeds
+have been added. HaGeZi TIF's domain version is an optional DNS-layer complement;
+it must be configured in a DNS blocker, not inserted into this IPv4 manifest.
 
-[AUDIT-HISTORY.md](AUDIT-HISTORY.md) preserves the July 2026 audit as historical
-context. It does not describe today's source selection. Current upstream URLs,
-minimum counts and exact exceptions are in [sources.json](sources.json); current
-measured results are in [AUDIT.md](AUDIT.md).
+[AUDIT-HISTORY.md](AUDIT-HISTORY.md) preserves the historical July audit. Current
+configuration and measurements are in `sources.json` and `AUDIT.md`.

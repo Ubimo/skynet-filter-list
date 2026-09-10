@@ -23,6 +23,7 @@ SPECIAL = tuple(ipaddress.IPv4Network(n) for n in (
     "192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24",
     "203.0.113.0/24", "224.0.0.0/3",
 ))
+SPECIAL_BOUNDS = tuple((int(n.network_address), int(n.broadcast_address)) for n in SPECIAL)
 
 
 @dataclass
@@ -40,17 +41,23 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
     names, urls = set(), set()
     for feed in feeds:
         name, url = feed["name"], feed["url"]
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", name) or name == 'combined':
             raise ValueError(f"Invalid source name: {name}")
         if name in names or url in urls or not url.startswith("https://"):
             raise ValueError(f"Duplicate name/URL or non-HTTPS source: {name}")
-        if feed.get("parser", "first_field") not in ("first_field", "csv"):
+        if feed.get("parser", "first_field") not in ("first_field", "csv", "spamhaus_json"):
             raise ValueError(f"Unknown parser: {name}")
         if not isinstance(feed["minimum_entries"], int) or feed["minimum_entries"] < 1:
             raise ValueError(f"Invalid minimum_entries: {name}")
         allowed = set(feed.get("allowed_special", []))
         if not allowed.issubset({str(n) for n in SPECIAL}):
             raise ValueError(f"Exception is not an exact special-use prefix: {name}")
+        if not 0 < feed.get('max_churn_ratio', 0.8) <= 1:
+            raise ValueError(f"Invalid churn limit: {name}")
+        if feed.get('freshness'):
+            policy = feed['freshness']
+            if policy['type'] not in ('iso_comment', 'firehol', 'spamhaus_json') or policy['max_age_hours'] <= 0:
+                raise ValueError(f"Invalid freshness policy: {name}")
         names.add(name)
         urls.add(url)
     return feeds
@@ -76,6 +83,11 @@ def download(url: str, timeout: float = 30, retries: int = 1) -> str:
 
 def parse(body: str, feed: dict, *, published: bool = False) -> Parsed:
     result = Parsed(set())
+    if not published and feed.get('parser') == 'spamhaus_json':
+        rows = [json.loads(line) for line in body.splitlines() if line.strip()]
+        if any('cidr' not in row and row.get('type') != 'metadata' for row in rows):
+            raise ValueError('Invalid Spamhaus row')
+        body = '\n'.join(row['cidr'] for row in rows if 'cidr' in row)
     is_csv = not published and feed.get("parser") == "csv"
     rows = csv.reader(io.StringIO(body)) if is_csv else ([s] for s in body.splitlines())
     allowed = set(feed.get("allowed_special", []))
@@ -96,7 +108,8 @@ def parse(body: str, feed: dict, *, published: bool = False) -> Parsed:
         # Check before filtering special ranges; never silently discard a /0.
         if str(network) not in allowed and network.prefixlen < 12:
             raise ValueError(f"Dangerously broad network: {network}")
-        if str(network) not in allowed and any(network.overlaps(n) for n in SPECIAL):
+        start, end = int(network.network_address), int(network.broadcast_address)
+        if str(network) not in allowed and any(start <= hi and end >= lo for lo, hi in SPECIAL_BOUNDS):
             result.excluded_special += 1
             continue
         result.networks.add(network)
@@ -133,6 +146,10 @@ def check_change(current: dict, previous: dict) -> None:
 def serialize(networks: set[ipaddress.IPv4Network]) -> str:
     ordered = sorted(networks, key=lambda n: (int(n.network_address), n.prefixlen))
     return "".join(f"{n.network_address if n.prefixlen == 32 else n}\n" for n in ordered)
+
+
+def snapshot_body(networks, record):
+    return ''.join('# ' + line + '\n' for line in record.get('attribution', [])) + serialize(networks)
 
 
 def digest(body: str) -> str:
