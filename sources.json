@@ -45,7 +45,8 @@
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
-    }
+    },
+    "quarantine_on_stale": true
   },
   {
     "name": "firehol-dshield-1d",

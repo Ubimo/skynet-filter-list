@@ -35,6 +35,12 @@ eligible again only when fresh data passes all validation. Known stale Feodo dat
 is not treated as an unexpected job failure. An address from Feodo can still be
 blocked if another eligible source independently includes it.
 
+FireHOL Cybercrime is also quarantined while stale. On September 21, 2026 its
+`Source File Date` was September 13, 2026 at 18:21:22 UTC, beyond the unchanged
+168-hour limit. It remains checked on every update and excluded until fresh data
+passes validation. This expected stale-data condition does not fail the workflow;
+download errors, missing timestamps and invalid replacement data still do.
+
 Four sources are candidates for automatic suppression from the active union:
 
 - `firehol-et-block`
@@ -101,7 +107,7 @@ replacement is not accepted just because it has been retried.
 
 Unexpected failures produce `stale` or `disabled` status and fail the workflow
 **after** eligible healthy updates are published. `quarantined` is the expected
-Feodo stale-data state; `included: false` with healthy status can indicate a
+Feodo and FireHOL Cybercrime stale-data state; `included: false` with healthy status can indicate a
 redundant source under continued observation. All states are visible in the audit.
 
 GitHub Actions runs daily at 03:17 UTC and can be dispatched manually. Execution
