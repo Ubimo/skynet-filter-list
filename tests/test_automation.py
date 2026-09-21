@@ -10,7 +10,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from feed_analysis import combine, intervals, select_sources, subtract, turnover
 from feed_freshness import metadata, StaleSourceError
-from feed_policy import parse
+from feed_policy import load_feeds, parse
 from lookup_ip import lookup
 import test_ipv4_feeds as fixtures
 from test_ipv4_feeds import NOW, BODY, FEED
@@ -154,6 +154,52 @@ class IntegrationTests(unittest.TestCase):
                                                self.feeds[1]['url']: BODY}))
         self.assertEqual(self.state()['one']['status'], 'ok')
         self.audit()
+
+    def configure_cybercrime(self):
+        feed = next(f for f in load_feeds() if f['name'] == 'firehol-cybercrime')
+        self.feeds[0] = feed
+        self.configure()
+        body = ''.join(f'8.8.8.{i}\n' for i in range(1, 129))
+        return feed, body
+
+    def test_cybercrime_expiry_excludes_recent_baseline_and_recovers(self):
+        feed, body = self.configure_cybercrime()
+        before = datetime(2026, 9, 20, 17, tzinfo=timezone.utc)
+        after = datetime(2026, 9, 21, 15, tzinfo=timezone.utc)
+        bodies = {feed['url']: '# Source File Date: Sun Sep 13 18:21:22 UTC 2026\n' + body,
+                  self.feeds[1]['url']: BODY}
+        self.assertFalse(self.run_update(before, bodies))
+        baseline = self.state()[feed['name']]
+        self.assertTrue(baseline['included'])
+        self.audit(before)
+
+        self.assertFalse(self.run_update(after, bodies))
+        record = self.state()[feed['name']]
+        self.assertEqual(record['status'], 'quarantined')
+        self.assertFalse(record['included'])
+        self.assertEqual(record['sha256'], baseline['sha256'])
+        self.assertEqual(record['last_success'], baseline['last_success'])
+        self.assertFalse(lookup('8.8.8.1', self.root)['blocked_in_published_snapshot'])
+        self.assertTrue(lookup('8.8.4.1', self.root)['blocked_in_published_snapshot'])
+        self.audit(after)
+
+        bodies[feed['url']] = '# Source File Date: Mon Sep 21 14:00:00 UTC 2026\n' + body
+        self.assertFalse(self.run_update(after, bodies))
+        self.assertEqual(self.state()[feed['name']]['status'], 'ok')
+        self.assertTrue(lookup('8.8.8.1', self.root)['blocked_in_published_snapshot'])
+        self.audit(after)
+
+    def test_cybercrime_quarantine_does_not_hide_other_failures(self):
+        feed, body = self.configure_cybercrime()
+        now = datetime(2026, 9, 21, 15, tzinfo=timezone.utc)
+        for upstream in (TimeoutError('offline'), body,
+                         '# Source File Date: Mon Sep 21 14:00:00 UTC 2026\n' + body + '0.0.0.0/0\n'):
+            with self.subTest(upstream=str(upstream)[:60]):
+                self.assertTrue(self.run_update(now, {feed['url']: upstream,
+                                                     self.feeds[1]['url']: BODY}))
+                self.assertEqual(self.state()[feed['name']]['status'], 'disabled')
+                self.assertFalse(self.state()[feed['name']]['included'])
+                self.audit(now)
 
     def test_churn_keeps_good_snapshot_and_records_reason(self):
         self.run_update()
