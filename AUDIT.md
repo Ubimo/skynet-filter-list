@@ -2,10 +2,10 @@
 
 Automatically generated; historical notes are in `AUDIT-HISTORY.md`.
 
-- Checked at: 2026-09-21T08:53:25+00:00
+- Checked at: 2026-09-21T15:07:47+00:00
 - Configured sources: 25
 - Contributing sources: 23
-- Combined IPv4/CIDR entries: 233080
+- Combined IPv4/CIDR entries: 232348
 - Active / expired exceptions: 0 / 0
 - Maximum fallback age: 72 hours
 
@@ -14,31 +14,31 @@ Last success means successful retrieval and validation, not an upstream observat
 
 | Source | State | Included | Entries | Provider timestamp | Last success |
 |---|---|---|---:|---|---|
-| [greensnow](https://blocklist.greensnow.co/greensnow.txt) | ok | True | 5719 | unknown | 2026-09-21T08:53:25+00:00 |
+| [greensnow](https://blocklist.greensnow.co/greensnow.txt) | ok | True | 5067 | unknown | 2026-09-21T15:07:47+00:00 |
 | [feodotracker](https://feodotracker.abuse.ch/downloads/ipblocklist.txt) | quarantined | False | 0 | 2026-03-04T14:28:39+00:00 | never |
-| [binarydefense](https://www.binarydefense.com/banlist.txt) | ok | True | 5194 | unknown | 2026-09-21T08:53:25+00:00 |
-| [firehol-blocklist-net-ua](https://iplists.firehol.org/files/blocklist_net_ua.ipset) | ok | True | 203086 | 2026-09-19T09:25:26+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-ciarmy](https://iplists.firehol.org/files/ciarmy.ipset) | ok | True | 15000 | 2026-09-21T02:04:01+00:00 | 2026-09-21T08:53:25+00:00 |
+| [binarydefense](https://www.binarydefense.com/banlist.txt) | ok | True | 5194 | unknown | 2026-09-21T15:07:47+00:00 |
+| [firehol-blocklist-net-ua](https://iplists.firehol.org/files/blocklist_net_ua.ipset) | ok | True | 203086 | 2026-09-19T09:25:26+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-ciarmy](https://iplists.firehol.org/files/ciarmy.ipset) | ok | True | 15000 | 2026-09-21T10:04:01+00:00 | 2026-09-21T15:07:47+00:00 |
 | [firehol-cybercrime](https://iplists.firehol.org/files/cybercrime.ipset) | disabled | False | 466 | 2026-09-13T18:21:22+00:00 | 2026-09-20T08:32:46+00:00 |
-| [firehol-dshield-1d](https://iplists.firehol.org/files/dshield_1d.netset) | ok | True | 30 | 2026-09-21T01:44:31+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-et-block](https://iplists.firehol.org/files/et_block.netset) | ok | True | 1634 | 2026-09-18T04:30:01+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-et-compromised](https://iplists.firehol.org/files/et_compromised.ipset) | ok | True | 675 | 2026-09-18T19:32:07+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-level1](https://iplists.firehol.org/files/firehol_level1.netset) | ok | True | 4675 | 2026-09-21T04:44:38+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-level2](https://iplists.firehol.org/files/firehol_level2.netset) | ok | True | 24286 | 2026-09-21T04:52:36+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-level3](https://iplists.firehol.org/files/firehol_level3.netset) | ok | True | 12605 | 2026-09-21T02:04:01+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-webserver](https://iplists.firehol.org/files/firehol_webserver.netset) | ok | True | 1125 | 2026-09-20T07:04:01+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-ciarmy-malicious](https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset) | ok | True | 12066 | 2026-09-20T18:35:04+00:00 | 2026-09-21T08:53:25+00:00 |
-| [firehol-myip](https://iplists.firehol.org/files/myip.ipset) | ok | True | 1218 | 2026-09-20T07:04:01+00:00 | 2026-09-21T08:53:25+00:00 |
-| [spamhaus-drop](https://www.spamhaus.org/drop/drop_v4.json) | ok | True | 1711 | 2026-09-20T10:44:02+00:00 | 2026-09-21T08:53:25+00:00 |
-| [blocklist-de-strongips](https://lists.blocklist.de/lists/strongips.txt) | ok | True | 371 | unknown | 2026-09-21T08:53:25+00:00 |
-| [myip-ms-latest-blacklist](https://myip.ms/files/blacklist/general/latest_blacklist.txt) | ok | True | 1249 | unknown | 2026-09-21T08:53:25+00:00 |
-| [ipsum-level2](https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt) | ok | True | 35706 | unknown | 2026-09-21T08:53:25+00:00 |
-| [emerging-block-ips](https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt) | ok | True | 1733 | unknown | 2026-09-21T08:53:25+00:00 |
-| [interserver-iprbl](https://sigs.interserver.net/iprbl.txt) | ok | True | 4294 | unknown | 2026-09-21T08:53:25+00:00 |
-| [blocklist-de-export-ips-all](https://www.blocklist.de/downloads/export-ips_all.txt) | ok | True | 24987 | unknown | 2026-09-21T08:53:25+00:00 |
-| [abuseipdb-s100-7d](https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4) | ok | True | 77897 | 2026-09-21T08:45:12+00:00 | 2026-09-21T08:53:25+00:00 |
-| [drb-ra-IPC2s-30day](https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv) | ok | True | 262 | unknown | 2026-09-21T08:53:25+00:00 |
-| [hagezi-tif](https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt) | ok | True | 77806 | unknown | 2026-09-21T08:53:25+00:00 |
+| [firehol-dshield-1d](https://iplists.firehol.org/files/dshield_1d.netset) | ok | True | 30 | 2026-09-21T01:44:31+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-et-block](https://iplists.firehol.org/files/et_block.netset) | ok | True | 1634 | 2026-09-18T04:30:01+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-et-compromised](https://iplists.firehol.org/files/et_compromised.ipset) | ok | True | 675 | 2026-09-18T19:32:07+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-level1](https://iplists.firehol.org/files/firehol_level1.netset) | ok | True | 4675 | 2026-09-21T04:44:38+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-level2](https://iplists.firehol.org/files/firehol_level2.netset) | ok | True | 17540 | 2026-09-21T10:12:38+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-level3](https://iplists.firehol.org/files/firehol_level3.netset) | ok | True | 12759 | 2026-09-21T10:08:04+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-webserver](https://iplists.firehol.org/files/firehol_webserver.netset) | ok | True | 1112 | 2026-09-21T07:31:33+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-ciarmy-malicious](https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset) | ok | True | 12066 | 2026-09-20T18:35:04+00:00 | 2026-09-21T15:07:47+00:00 |
+| [firehol-myip](https://iplists.firehol.org/files/myip.ipset) | ok | True | 1246 | 2026-09-21T07:31:33+00:00 | 2026-09-21T15:07:47+00:00 |
+| [spamhaus-drop](https://www.spamhaus.org/drop/drop_v4.json) | ok | True | 1715 | 2026-09-21T09:14:02+00:00 | 2026-09-21T15:07:47+00:00 |
+| [blocklist-de-strongips](https://lists.blocklist.de/lists/strongips.txt) | ok | True | 372 | unknown | 2026-09-21T15:07:47+00:00 |
+| [myip-ms-latest-blacklist](https://myip.ms/files/blacklist/general/latest_blacklist.txt) | ok | True | 1304 | unknown | 2026-09-21T15:07:47+00:00 |
+| [ipsum-level2](https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt) | ok | True | 35706 | unknown | 2026-09-21T15:07:47+00:00 |
+| [emerging-block-ips](https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt) | ok | True | 1733 | unknown | 2026-09-21T15:07:47+00:00 |
+| [interserver-iprbl](https://sigs.interserver.net/iprbl.txt) | ok | True | 4337 | unknown | 2026-09-21T15:07:47+00:00 |
+| [blocklist-de-export-ips-all](https://www.blocklist.de/downloads/export-ips_all.txt) | ok | True | 25910 | unknown | 2026-09-21T15:07:47+00:00 |
+| [abuseipdb-s100-7d](https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4) | ok | True | 78708 | 2026-09-21T14:39:27+00:00 | 2026-09-21T15:07:47+00:00 |
+| [drb-ra-IPC2s-30day](https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv) | ok | True | 263 | unknown | 2026-09-21T15:07:47+00:00 |
+| [hagezi-tif](https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt) | ok | True | 75835 | unknown | 2026-09-21T15:07:47+00:00 |
 
 ## Automatic redundancy observation
 
