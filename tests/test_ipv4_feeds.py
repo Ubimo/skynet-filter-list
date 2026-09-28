@@ -336,6 +336,24 @@ class UpdateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'normal update'):
             rebuild(self.root)
 
+    def test_new_source_is_pending_only_for_pr_checks_until_first_refresh(self):
+        self.run_update()
+        self.feeds.append(dict(FEED, name='three', url='https://example.com/three'))
+        self.write_feeds()
+        with self.assertRaisesRegex(ValueError, 'configured sources'):
+            self.audit()
+        with contextlib.redirect_stdout(io.StringIO()):
+            validate(self.root, now=NOW, allow_pending=True)
+        # A removed source is never "pending": stale records still fail.
+        self.feeds = self.feeds[1:]
+        self.write_feeds()
+        with self.assertRaisesRegex(ValueError, 'configured sources'):
+            validate(self.root, now=NOW, allow_pending=True)
+        self.assertFalse(self.run_update(NOW + timedelta(hours=1),
+                                         {f['url']: BODY + '8.8.4.9\n' for f in self.feeds}))
+        self.assertEqual(self.state()['three']['status'], 'ok')
+        self.audit(NOW + timedelta(hours=1))
+
 
 class RepositoryTests(unittest.TestCase):
     # The update job skips this: it validates the freshly generated candidate
@@ -343,7 +361,7 @@ class RepositoryTests(unittest.TestCase):
     # block the refresh that would make the committed snapshot consistent again.
     @unittest.skipIf(os.environ.get('SKIP_COMMITTED_SNAPSHOT') == '1', 'validated after refresh')
     def test_exact_committed_snapshot(self):
-        validate(ROOT)
+        validate(ROOT, allow_pending=True)
 
     def test_removed_upstream_is_not_configured(self):
         self.assertFalse(any('jumpsmm7/GeneratedAdblock' in f['url'] for f in load_feeds(ROOT)))
