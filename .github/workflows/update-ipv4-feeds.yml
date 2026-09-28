@@ -39,7 +39,7 @@ env:
 jobs:
   validate:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -55,7 +55,7 @@ jobs:
 
   update:
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: write
@@ -68,6 +68,10 @@ jobs:
         with:
           python-version: '3.13'
       - name: Run regression tests
+        # The committed snapshot is validated after refresh (next steps), so a
+        # config change such as a removed source cannot block its own repair.
+        env:
+          SKIP_COMMITTED_SNAPSHOT: "1"
         run: python -m unittest discover -s tests -v
       - name: Refresh independent sources
         id: refresh
@@ -107,6 +111,6 @@ jobs:
         run: |
           if [ -f AUDIT.md ]; then cat AUDIT.md >> "$GITHUB_STEP_SUMMARY"; fi
           if [ "$REFRESH_OUTCOME" != "success" ]; then
-            echo "One or more feeds failed. See generated/status.json; healthy feeds were eligible for publication."
+            echo "One or more feeds failed or the combined coverage changed beyond 0.5x-2x. See generated/status.json; healthy feeds were eligible for publication."
             exit 1
           fi

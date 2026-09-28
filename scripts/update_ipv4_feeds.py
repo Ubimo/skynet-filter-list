@@ -8,9 +8,9 @@ import json
 from pathlib import Path
 
 from feed_policy import (
-    ROOT, RAW_PREFIX, MAX_STALE_HOURS, atomic_write, check_change, digest,
-    download, load_feeds, metrics, parse, serialize,
-    snapshot_body,
+    ROOT, RAW_PREFIX, MAX_STALE_HOURS, COMBINED_MIN_RATIO, COMBINED_MAX_RATIO,
+    atomic_write, check_change, digest, download, load_feeds, metrics, parse,
+    serialize, snapshot_body, unchanged_limit,
 )
 from feed_analysis import combine, load_allowlist, select_sources, turnover
 from feed_freshness import StaleSourceError, fallback_fresh, metadata
@@ -44,6 +44,19 @@ def previous_snapshot(root: Path, feed: dict, previous: dict, now: datetime):
         return None
 
 
+def unchanged_since(previous: dict, sha256: str, now: datetime) -> datetime:
+    """When the accepted content last changed. Unknown history starts the clock
+    now, so introducing this check can never produce a false alarm."""
+    if previous.get('sha256') == sha256 and previous.get('content_changed_at'):
+        try:
+            changed = datetime.fromisoformat(previous['content_changed_at'])
+            if changed.tzinfo is not None and changed <= now:
+                return changed
+        except ValueError:
+            pass
+    return now
+
+
 def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
     old = previous_snapshot(root, feed, previous, now)
     name = feed["name"]
@@ -59,14 +72,20 @@ def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
         churn = turnover(parsed.networks, parse(old[0], feed, published=True).networks, feed) if old else None
         if churn and max(churn['added_ratio'], churn['removed_ratio']) > feed.get('max_churn_ratio', 0.8):
             raise ValueError(f"Anomalous address turnover: {churn}")
+        body = snapshot_body(parsed.networks, meta)
+        sha256 = digest(body)
+        changed = unchanged_since(previous, sha256, now)
+        limit = unchanged_limit(feed)
+        if limit and now - changed > timedelta(hours=limit):
+            raise StaleSourceError(
+                f"Content unchanged since {changed.isoformat(timespec='seconds')} (limit {limit}h)", changed)
         record = {
             "url": feed["url"], "status": "ok", "last_success": timestamp(now),
             "checked_at": timestamp(now), "metrics": current,
             "excluded_ipv6": parsed.ipv6, "excluded_special": parsed.excluded_special,
             "error": None, "turnover": churn, **meta,
+            "content_changed_at": timestamp(changed), "sha256": sha256,
         }
-        body = snapshot_body(parsed.networks, record)
-        record['sha256'] = digest(body)
         return name, record, body, True
     except Exception as error:
         active = (old is not None and now - old[1] <= timedelta(hours=MAX_STALE_HOURS)
@@ -97,6 +116,7 @@ def render_report(feeds: list[dict], state: dict) -> str:
         f"- Configured sources: {len(feeds)}",
         f"- Contributing sources: {sum(r.get('included', False) for r in state['sources'].values())}",
         f"- Combined IPv4/CIDR entries: {state['combined']['entries']}",
+        *([f"- Combined coverage anomaly: {state['combined_anomaly']}"] if state.get('combined_anomaly') else []),
         f"- Active / expired exceptions: {len(state['allowlist_active'])} / {len(state['allowlist_expired'])}",
         f"- Maximum fallback age: {MAX_STALE_HOURS} hours", "",
         "Counts are unique IPv4/CIDR entries per source, not unique addresses across sources.",
@@ -122,6 +142,13 @@ def render_report(feeds: list[dict], state: dict) -> str:
               "Provider timestamps describe the supplied file, not necessarily each underlying threat observation.",
               "Failure details, exclusions, turnover and content SHA-256 hashes are in `generated/status.json`.", ""]
     return "\n".join(lines)
+
+
+def combined_anomaly(previous_public, public):
+    if not previous_public or COMBINED_MIN_RATIO * previous_public <= public <= COMBINED_MAX_RATIO * previous_public:
+        return None
+    return (f"Combined public coverage changed {previous_public} -> {public} "
+            f"(allowed {COMBINED_MIN_RATIO}x to {COMBINED_MAX_RATIO}x)")
 
 
 def combined_body(networks, records):
@@ -158,13 +185,22 @@ def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, wo
     if combined != combine(networks.values(), exceptions):
         raise ValueError('Redundancy suppression would lose coverage')
     body = combined_body(combined, state['sources'])
-    state['combined'] = {'entries': len(combined), 'sha256': digest(body)}
+    public = sum(n.num_addresses for n in combined)
+    state['combined'] = {'entries': len(combined), 'sha256': digest(body), 'public_addresses': public}
+    state['combined_anomaly'] = combined_anomaly(previous.get('combined', {}).get('public_addresses'), public)
+    if state['combined_anomaly']:
+        # Published anyway (every source passed its own checks); main() exits 2 so a
+        # large unreviewed swing of the whole list fails the run and gets noticed.
+        # Not part of the per-source `degraded` result: an expected quarantine
+        # stays an expected state for the sources themselves.
+        print(f"combined: {state['combined_anomaly']}")
     state['allowlist_active'], state['allowlist_expired'] = exceptions, expired
     atomic_write(root / 'generated/combined.ipv4', body)
     atomic_write(root / "filter.list", RAW_PREFIX + 'generated/combined.ipv4\n' if combined else '')
     atomic_write(root / "generated/status.json", json.dumps(state, indent=2) + "\n")
     atomic_write(root / "AUDIT.md", render_report(feeds, state))
-    atomic_write(root / ".update-result.json", json.dumps({"degraded": degraded}) + "\n")
+    atomic_write(root / ".update-result.json", json.dumps({"degraded": degraded,
+                                                           "combined_anomaly": state['combined_anomaly']}) + "\n")
     return degraded
 
 
@@ -172,7 +208,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
     args = parser.parse_args()
-    raise SystemExit(2 if update(args.root) else 0)
+    degraded = update(args.root)
+    anomaly = json.loads((args.root / ".update-result.json").read_text(encoding="utf-8"))["combined_anomaly"]
+    raise SystemExit(2 if degraded or anomaly else 0)
 
 
 if __name__ == "__main__":

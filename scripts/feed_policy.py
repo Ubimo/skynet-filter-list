@@ -16,6 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW_PREFIX = "https://raw.githubusercontent.com/Ubimo/skynet-filter-list/main/"
 MAX_SOURCE_BYTES = 64 * 1024 * 1024
 MAX_STALE_HOURS = 72
+# Sources without a provider timestamp: content unchanged for longer than this
+# is treated like expired provider data. Overridable per source.
+MAX_UNCHANGED_HOURS = 168
+# Whole-list plausibility: public coverage of the combined file vs. last run.
+COMBINED_MIN_RATIO, COMBINED_MAX_RATIO = 0.5, 2.0
 # Conservative special-use policy; exceptions must be exact, reviewed prefixes.
 SPECIAL = tuple(ipaddress.IPv4Network(n) for n in (
     "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8",
@@ -54,6 +59,9 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
             raise ValueError(f"Exception is not an exact special-use prefix: {name}")
         if not 0 < feed.get('max_churn_ratio', 0.8) <= 1:
             raise ValueError(f"Invalid churn limit: {name}")
+        limit = feed.get('max_unchanged_hours')
+        if limit is not None and (isinstance(limit, bool) or not isinstance(limit, (int, float)) or limit <= 0):
+            raise ValueError(f"Invalid max_unchanged_hours: {name}")
         if feed.get('freshness'):
             policy = feed['freshness']
             if policy['type'] not in ('iso_comment', 'firehol', 'spamhaus_json') or policy['max_age_hours'] <= 0:
@@ -61,6 +69,12 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
         names.add(name)
         urls.add(url)
     return feeds
+
+
+def unchanged_limit(feed: dict):
+    """Hours a source may serve identical content; None disables the check.
+    Sources with a provider timestamp are aged by that timestamp instead."""
+    return feed.get('max_unchanged_hours', None if feed.get('freshness') else MAX_UNCHANGED_HOURS)
 
 
 def download(url: str, timeout: float = 30, retries: int = 1) -> str:
