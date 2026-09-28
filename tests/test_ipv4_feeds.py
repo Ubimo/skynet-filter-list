@@ -355,6 +355,66 @@ class UpdateTests(unittest.TestCase):
         self.audit(NOW + timedelta(hours=1))
 
 
+class ParserExtensionTests(unittest.TestCase):
+    THREATFOX = dict(FEED, parser='threatfox_csv', min_confidence=75)
+    HEADER = ('# Last updated: 2026-09-10 00:00:00 UTC #\n'
+              '# "first_seen_utc","ioc_id","ioc_value","ioc_type","threat_type","fk_malware",'
+              '"malware_alias","malware_printable","last_seen_utc","confidence_level","is_compromised",'
+              '"reference","tags","anonymous","reporter"\n')
+
+    @staticmethod
+    def row(value, confidence, kind='ip:port'):
+        return (f'"2026-09-09 10:00:00", "1", "{value}", "{kind}", "botnet_cc", "x", "None", "X", "", '
+                f'"{confidence}", "False", "", "", "0", "r"\n')
+
+    def test_threatfox_extracts_address_and_filters_confidence(self):
+        body = self.HEADER + self.row('8.8.8.8:443', 100) + self.row('8.8.8.8:8080', 75) \
+            + self.row('8.8.4.4:4444', 50) + self.row('[2001:db8::1]:443', 90)
+        parsed = parse(body, dict(self.THREATFOX, allow_ipv6=True))
+        self.assertEqual({str(n) for n in parsed.networks}, {'8.8.8.8/32'})
+        self.assertEqual(parsed.ipv6, 1)
+        with self.assertRaisesRegex(ValueError, 'IPv6'):
+            parse(body, self.THREATFOX)
+
+    def test_threatfox_rejects_unexpected_rows(self):
+        for bad in (self.row('8.8.8.8:443', 'high'), self.row('example.com:443', 100, 'domain'),
+                    '"2026-09-09 10:00:00", "1", "8.8.8.8:443"\n', self.row('8.8.8.8', 100)):
+            with self.subTest(row=bad[:60]), self.assertRaisesRegex(ValueError, 'ThreatFox'):
+                parse(self.HEADER + self.row('8.8.8.8:443', 100) + bad, self.THREATFOX)
+
+    def test_threatfox_published_snapshot_is_plain(self):
+        parsed = parse(self.HEADER + self.row('8.8.8.8:443', 100), self.THREATFOX)
+        body = serialize(parsed.networks)
+        self.assertEqual(body, '8.8.8.8\n')
+        self.assertEqual(parse(body, self.THREATFOX, published=True).networks, parsed.networks)
+
+    def test_invalid_rows_tolerated_only_up_to_limit_and_never_when_published(self):
+        body = BODY + '120.229.26.013\n81.183.41.001\n'
+        with self.assertRaisesRegex(ValueError, '2 invalid'):
+            parse(body, FEED)
+        with self.assertRaisesRegex(ValueError, '2 invalid'):
+            parse(body, dict(FEED, max_invalid_rows=1))
+        parsed = parse(body, dict(FEED, max_invalid_rows=2))
+        self.assertEqual((len(parsed.networks), parsed.invalid), (4, 2))
+        with self.assertRaisesRegex(ValueError, 'invalid'):
+            parse(body, dict(FEED, max_invalid_rows=2), published=True)
+
+    def test_new_options_are_validated(self):
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__('shutil').rmtree(root))
+        for option in ({'min_confidence': 101}, {'min_confidence': True}, {'max_invalid_rows': -1},
+                       {'max_invalid_rows': 101}, {'max_invalid_rows': '3'}, {'parser': 'unknown'}):
+            (root / 'sources.json').write_text(json.dumps([dict(FEED, **option)]))
+            with self.subTest(option=option), self.assertRaises(ValueError):
+                load_feeds(root)
+
+    def test_configured_new_sources_use_their_parsers(self):
+        feeds = {f['name']: f for f in load_feeds(ROOT)}
+        self.assertEqual(feeds['threatfox-ipport']['parser'], 'threatfox_csv')
+        self.assertEqual(feeds['threatfox-ipport']['freshness']['type'], 'iso_comment')
+        self.assertGreater(feeds['threatview-high-confidence']['max_invalid_rows'], 0)
+
+
 class RepositoryTests(unittest.TestCase):
     # The update job skips this: it validates the freshly generated candidate
     # after refresh instead, so a config change (e.g. a removed source) cannot

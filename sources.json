@@ -174,5 +174,27 @@
     "name": "hagezi-tif",
     "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt",
     "minimum_entries": 17125
+  },
+  {
+    "name": "threatfox-ipport",
+    "url": "https://threatfox.abuse.ch/export/csv/ip-port/recent/",
+    "parser": "threatfox_csv",
+    "min_confidence": 75,
+    "minimum_entries": 565,
+    "allow_ipv6": true,
+    "freshness": {
+      "type": "iso_comment",
+      "max_age_hours": 72
+    },
+    "max_churn_ratio": 0.95,
+    "policy_note": "2026-09-28: abuse.ch ThreatFox recent ip:port IOCs (botnet C2), confidence >= 75: 2,271 IPv4 hosts at review. Rolling export window, so churn limit raised to 0.95; count and coverage limits stay 0.5x-2x. Floor = 25% of reviewed count."
+  },
+  {
+    "name": "threatview-high-confidence",
+    "url": "https://threatview.io/Downloads/IP-High-Confidence-Feed.txt",
+    "minimum_entries": 5100,
+    "max_invalid_rows": 10,
+    "redundancy_candidate": true,
+    "policy_note": "2026-09-28: 20,497 valid public IPv4 hosts at review; upstream contains a few malformed rows (leading-zero octets), up to 10 are dropped. No provider timestamp; aged by content. Floor = 25% of reviewed count."
   }
 ]
