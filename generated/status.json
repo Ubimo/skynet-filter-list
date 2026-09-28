@@ -274,30 +274,6 @@
       "sha256": "c81feb30a7440796be114a9f530a421612b5a3aa10df796919a2bec52218052b",
       "included": true
     },
-    "firehol-ciarmy-malicious": {
-      "url": "https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset",
-      "status": "ok",
-      "last_success": "2026-09-28T09:29:47+00:00",
-      "checked_at": "2026-09-28T09:29:47+00:00",
-      "metrics": {
-        "entries": 11891,
-        "public_addresses": 15000
-      },
-      "excluded_ipv6": 0,
-      "excluded_special": 0,
-      "error": null,
-      "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
-      },
-      "upstream_updated_at": "2026-09-27T18:07:03+00:00",
-      "upstream_deadline": "2026-10-04T18:07:03+00:00",
-      "attribution": [],
-      "sha256": "6580e9bf923bd27f0bc018356261bf9b3aa39539f97236ab7299e3901c24ad0c",
-      "included": true
-    },
     "firehol-myip": {
       "url": "https://iplists.firehol.org/files/myip.ipset",
       "status": "ok",
@@ -421,30 +397,6 @@
       "upstream_deadline": null,
       "attribution": [],
       "sha256": "8495bf26ed737e90408d09cc177fa95def5917d4a30b6969b5f2c518436e51c0",
-      "included": true
-    },
-    "emerging-block-ips": {
-      "url": "https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt",
-      "status": "ok",
-      "last_success": "2026-09-28T09:29:47+00:00",
-      "checked_at": "2026-09-28T09:29:47+00:00",
-      "metrics": {
-        "entries": 1732,
-        "public_addresses": 14853893
-      },
-      "excluded_ipv6": 0,
-      "excluded_special": 0,
-      "error": null,
-      "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
-      },
-      "upstream_updated_at": null,
-      "upstream_deadline": null,
-      "attribution": [],
-      "sha256": "24d326fcd309303ccd62cc4b6a02795263f5bd67246d95174cda4fdb17ee87e9",
       "included": true
     },
     "interserver-iprbl": {
@@ -639,8 +591,8 @@
     }
   },
   "combined": {
-    "entries": 95382,
-    "sha256": "26ee55b258ecc76b4e1772cda22b9ef59897a4a3db644d2fe4d4731147062457"
+    "entries": 94001,
+    "sha256": "4c3c60a889d2bd9f1530aea094f9df83867cd1a1c8112eb87b8d2bbbd053e24b"
   },
   "allowlist_active": [],
   "allowlist_expired": []

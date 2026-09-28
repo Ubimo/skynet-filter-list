@@ -121,15 +121,6 @@
     }
   },
   {
-    "name": "firehol-ciarmy-malicious",
-    "url": "https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset",
-    "minimum_entries": 3094,
-    "freshness": {
-      "type": "firehol",
-      "max_age_hours": 168
-    }
-  },
-  {
     "name": "firehol-myip",
     "url": "https://iplists.firehol.org/files/myip.ipset",
     "minimum_entries": 345,
@@ -164,11 +155,6 @@
     "name": "ipsum-level2",
     "url": "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt",
     "minimum_entries": 8155
-  },
-  {
-    "name": "emerging-block-ips",
-    "url": "https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt",
-    "minimum_entries": 433
   },
   {
     "name": "interserver-iprbl",
