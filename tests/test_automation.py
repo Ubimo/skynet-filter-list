@@ -8,7 +8,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from feed_analysis import combine, intervals, select_sources, subtract, turnover
+from feed_analysis import combine, intervals, overlaps_special, select_sources, subtract, turnover
 from feed_freshness import metadata, StaleSourceError
 from feed_policy import load_feeds, parse
 from lookup_ip import lookup
@@ -65,6 +65,15 @@ class IntervalTests(unittest.TestCase):
         actual = {int(a) for n in combined for a in n}
         self.assertEqual(actual, {int(a) for n in networks for a in n} - {int(ipaddress.ip_address('8.8.8.3'))})
         self.assertEqual(len(combine([networks], [])), 1)
+
+    def test_special_use_space_is_never_published(self):
+        # allowed_special (fullbogons) and a broad block spanning 10/8 + 11/8.
+        networks = {ipaddress.ip_network(n) for n in (
+            '10.0.0.0/7', '100.64.0.0/10', '192.168.0.0/16', '224.0.0.0/3', '8.8.8.0/24')}
+        combined = combine([networks], [])
+        self.assertFalse(overlaps_special(combined))
+        self.assertEqual({str(n) for n in combined}, {'8.8.8.0/24', '11.0.0.0/8'})
+        self.assertTrue(overlaps_special({ipaddress.ip_network('172.16.0.0/12')}))
 
     def test_same_count_complete_replacement_detected(self):
         old = {ipaddress.ip_network('8.8.8.0/24')}

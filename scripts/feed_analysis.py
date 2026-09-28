@@ -5,6 +5,8 @@ import ipaddress
 import json
 from pathlib import Path
 
+from feed_policy import SPECIAL
+
 
 def intervals(networks):
     result = []
@@ -14,6 +16,9 @@ def intervals(networks):
         else:
             result.append((start, end))
     return result
+
+
+SPECIAL_INTERVALS = intervals(SPECIAL)
 
 
 def subtract(base, exclusions):
@@ -78,9 +83,17 @@ def load_allowlist(root: Path, now: datetime, read=None):
 
 
 def combine(network_sets, exceptions):
+    """Published union: never contains special-use space, even if a source may
+    (e.g. FireHOL level1 fullbogons via allowed_special). Routers would otherwise
+    receive RFC1918, CGNAT, loopback or multicast ranges as block rules."""
     union = intervals(n for networks in network_sets for n in networks)
-    excluded = intervals(ipaddress.ip_network(item['cidr']) for item in exceptions)
+    excluded = intervals([*(ipaddress.ip_network(item['cidr']) for item in exceptions), *SPECIAL])
     return to_networks(subtract(union, excluded))
+
+
+def overlaps_special(networks) -> bool:
+    ranges = intervals(networks)
+    return subtract(ranges, SPECIAL_INTERVALS) != ranges
 
 
 def select_sources(feeds, records, networks, previous, now):
