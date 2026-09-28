@@ -12,8 +12,9 @@ firewall banmalware https://raw.githubusercontent.com/Ubimo/skynet-filter-list/m
 ```
 
 `filter.list` now points to **one** file, `generated/combined.ipv4`. It contains the
-exact union of usable source snapshots, minus active exceptions, with duplicates
-and overlapping/adjacent networks collapsed. Aggregation never adds addresses.
+exact union of usable source snapshots, minus active exceptions and minus all
+special-use ranges, with duplicates and overlapping/adjacent networks collapsed.
+Aggregation never adds addresses.
 SkyNet needs one data download instead of one per source. Individual snapshots
 remain available for validation, source attribution and automatic recovery.
 
@@ -23,7 +24,7 @@ exclusions, turnover measurements, failure reasons and observation state.
 
 ## Automatic source selection
 
-There are 25 configured sources. `sources.json` is the maintained upstream
+There are 24 configured sources. `sources.json` is the maintained upstream
 manifest; do not edit generated files. IPsum uses level 2, AbuseIPDB the score-100
 seven-day feed, and Spamhaus DROP is retrieved directly as JSON from Spamhaus.
 Spamhaus copyright, source, provider date and terms are preserved in its snapshot
@@ -64,7 +65,10 @@ suppression is September 24, 2026, depending on actual run times and observation
 - Remove unapproved special-use ranges (private, loopback, link-local, CGNAT,
   documentation, multicast and reserved ranges), including overlaps.
 - FireHOL level 1 intentionally includes fullbogons. Only its exact reviewed
-  special-use prefixes in `allowed_special` are exempt; public ranges are not.
+  special-use prefixes in `allowed_special` are exempt in its own snapshot; public
+  ranges are not. Special-use ranges are always subtracted from
+  `generated/combined.ipv4`, and publication validation rejects any overlap, so
+  RFC1918, CGNAT, loopback, link-local and multicast space never reach a router.
 - Reject invalid non-comment rows, malformed UTF-8, insufficient entries and
   excessive special-use entries (more than 1% of retained entries, with one
   tolerated). CSV and Spamhaus JSON have explicit parsers.
@@ -178,7 +182,10 @@ reset. Automatic redundancy observation is not a substitute for source selection
 ## Exclusions and history
 
 `jumpsmm7/GeneratedAdblock/IPlist.list` remains excluded after its collapse to two
-entries, including a reserved address, on September 10, 2026. Dedicated Tor exit
+entries, including a reserved address, on September 10, 2026. FireHOL
+`blocklist_net_ua` was removed on September 28, 2026: its provider date had not
+changed since September 21, it was about to exceed the 168-hour limit, and it
+supplied roughly 90% of all combined entries. Dedicated Tor exit
 lists and out-of-scope VoIP/PBX feeds remain excluded. No new broad scanner feeds
 have been added. HaGeZi TIF's domain version is an optional DNS-layer complement;
 it must be configured in a DNS blocker, not inserted into this IPv4 manifest.

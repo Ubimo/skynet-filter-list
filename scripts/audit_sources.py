@@ -10,7 +10,7 @@ import re
 
 from feed_policy import ROOT, RAW_PREFIX, MAX_STALE_HOURS, digest, download, load_feeds, metrics, parse, snapshot_body
 from update_ipv4_feeds import combined_body, render_report
-from feed_analysis import combine, load_allowlist
+from feed_analysis import combine, load_allowlist, overlaps_special
 from feed_freshness import fallback_fresh
 
 
@@ -80,6 +80,8 @@ def validate(root: Path = ROOT, *, now: datetime | None = None, read=None) -> No
     if combined != selected:
         raise ValueError('Suppression loses coverage')
     body = read('generated/combined.ipv4')
+    if overlaps_special(combined):
+        raise ValueError('Combined coverage contains special-use space')
     if not combined or body != combined_body(combined, state['sources']):
         raise ValueError('Combined file does not exactly equal validated sources minus exceptions')
     if state['combined'] != {'entries': len(combined), 'sha256': digest(body)}:

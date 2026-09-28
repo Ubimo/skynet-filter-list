@@ -21,15 +21,6 @@
     "policy_note": "2026-09-28: reviewed direct HTTPS feed contains 382 valid public IPv4 hosts; floor reset to half that count. Relative count, coverage and turnover guards remain enabled."
   },
   {
-    "name": "firehol-blocklist-net-ua",
-    "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
-    "minimum_entries": 44137,
-    "freshness": {
-      "type": "firehol",
-      "max_age_hours": 168
-    }
-  },
-  {
     "name": "firehol-ciarmy",
     "url": "https://iplists.firehol.org/files/ciarmy.ipset",
     "minimum_entries": 3750,
