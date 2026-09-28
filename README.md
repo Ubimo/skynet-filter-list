@@ -24,7 +24,7 @@ exclusions, turnover measurements, failure reasons and observation state.
 
 ## Automatic source selection
 
-There are 24 configured sources. `sources.json` is the maintained upstream
+There are 22 configured sources. `sources.json` is the maintained upstream
 manifest; do not edit generated files. IPsum uses level 2, AbuseIPDB the score-100
 seven-day feed, and Spamhaus DROP is retrieved directly as JSON from Spamhaus.
 Spamhaus copyright, source, provider date and terms are preserved in its snapshot
@@ -36,11 +36,12 @@ eligible again only when fresh data passes all validation. Known stale Feodo dat
 is not treated as an unexpected job failure. An address from Feodo can still be
 blocked if another eligible source independently includes it.
 
-FireHOL Cybercrime is also quarantined while stale. On September 21, 2026 its
-`Source File Date` was September 13, 2026 at 18:21:22 UTC, beyond the unchanged
-168-hour limit. It remains checked on every update and excluded until fresh data
-passes validation. This expected stale-data condition does not fail the workflow;
-download errors, missing timestamps and invalid replacement data still do.
+FireHOL Cybercrime was quarantined from September 21, 2026 (its `Source File Date`
+was September 13, beyond the 168-hour limit). Fresh data has since passed
+validation, and it is an active contributing source again. It keeps
+`quarantine_on_stale`, so a future stale file is again excluded automatically
+without failing the workflow; download errors, missing timestamps and invalid
+replacement data still do.
 
 Four sources are candidates for automatic suppression from the active union:
 
@@ -111,7 +112,7 @@ replacement is not accepted just because it has been retried.
 
 Unexpected failures produce `stale` or `disabled` status and fail the workflow
 **after** eligible healthy updates are published. `quarantined` is the expected
-Feodo and FireHOL Cybercrime stale-data state; `included: false` with healthy status can indicate a
+Feodo and (when stale) FireHOL Cybercrime state; `included: false` with healthy status can indicate a
 redundant source under continued observation. All states are visible in the audit.
 
 GitHub Actions runs daily at 03:17 UTC and can be dispatched manually. Execution
@@ -185,7 +186,11 @@ reset. Automatic redundancy observation is not a substitute for source selection
 entries, including a reserved address, on September 10, 2026. FireHOL
 `blocklist_net_ua` was removed on September 28, 2026: its provider date had not
 changed since September 21, it was about to exceed the 168-hour limit, and it
-supplied roughly 90% of all combined entries. Dedicated Tor exit
+supplied roughly 90% of all combined entries. On the same day two duplicates were
+removed: `emerging-block-ips` covered exactly the same addresses as
+`firehol-et-block` (kept, because FireHOL's `Source File Date` allows an age
+check), and `firehol-ciarmy-malicious` is a delayed iBlocklist copy of the same
+CI Army data as `firehol-ciarmy` (kept, fresher). Dedicated Tor exit
 lists and out-of-scope VoIP/PBX feeds remain excluded. No new broad scanner feeds
 have been added. HaGeZi TIF's domain version is an optional DNS-layer complement;
 it must be configured in a DNS blocker, not inserted into this IPv4 manifest.

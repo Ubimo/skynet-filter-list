@@ -3,9 +3,9 @@
 Automatically generated; historical notes are in `AUDIT-HISTORY.md`.
 
 - Checked at: 2026-09-28T09:29:47+00:00
-- Configured sources: 24
-- Contributing sources: 21
-- Combined IPv4/CIDR entries: 95382
+- Configured sources: 22
+- Contributing sources: 19
+- Combined IPv4/CIDR entries: 94001
 - Active / expired exceptions: 0 / 0
 - Maximum fallback age: 72 hours
 
@@ -26,13 +26,11 @@ Last success means successful retrieval and validation, not an upstream observat
 | [firehol-level2](https://iplists.firehol.org/files/firehol_level2.netset) | ok | True | 23465 | 2026-09-28T04:41:07+00:00 | 2026-09-28T09:29:47+00:00 |
 | [firehol-level3](https://iplists.firehol.org/files/firehol_level3.netset) | ok | True | 12516 | 2026-09-28T04:40:48+00:00 | 2026-09-28T09:29:47+00:00 |
 | [firehol-webserver](https://iplists.firehol.org/files/firehol_webserver.netset) | ok | True | 1505 | 2026-09-27T10:01:01+00:00 | 2026-09-28T09:29:47+00:00 |
-| [firehol-ciarmy-malicious](https://iplists.firehol.org/files/iblocklist_ciarmy_malicious.netset) | ok | True | 11891 | 2026-09-27T18:07:03+00:00 | 2026-09-28T09:29:47+00:00 |
 | [firehol-myip](https://iplists.firehol.org/files/myip.ipset) | ok | False | 1927 | 2026-09-27T10:01:01+00:00 | 2026-09-28T09:29:47+00:00 |
 | [spamhaus-drop](https://www.spamhaus.org/drop/drop_v4.json) | ok | True | 1694 | 2026-09-28T09:14:02+00:00 | 2026-09-28T09:29:47+00:00 |
 | [blocklist-de-strongips](https://lists.blocklist.de/lists/strongips.txt) | ok | True | 383 | unknown | 2026-09-28T09:29:47+00:00 |
 | [myip-ms-latest-blacklist](https://myip.ms/files/blacklist/general/latest_blacklist.txt) | ok | True | 1917 | unknown | 2026-09-28T09:29:47+00:00 |
 | [ipsum-level2](https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt) | ok | True | 33544 | unknown | 2026-09-28T09:29:47+00:00 |
-| [emerging-block-ips](https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt) | ok | True | 1732 | unknown | 2026-09-28T09:29:47+00:00 |
 | [interserver-iprbl](https://sigs.interserver.net/iprbl.txt) | ok | True | 4696 | unknown | 2026-09-28T09:29:47+00:00 |
 | [blocklist-de-export-ips-all](https://www.blocklist.de/downloads/export-ips_all.txt) | ok | True | 29626 | unknown | 2026-09-28T09:29:47+00:00 |
 | [abuseipdb-s100-7d](https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4) | ok | True | 74863 | 2026-09-28T09:18:38+00:00 | 2026-09-28T09:29:47+00:00 |
