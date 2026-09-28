@@ -17,7 +17,8 @@
   {
     "name": "binarydefense",
     "url": "https://www.binarydefense.com/banlist.txt",
-    "minimum_entries": 663
+    "minimum_entries": 191,
+    "policy_note": "2026-09-28: reviewed direct HTTPS feed contains 382 valid public IPv4 hosts; floor reset to half that count. Relative count, coverage and turnover guards remain enabled."
   },
   {
     "name": "firehol-blocklist-net-ua",
