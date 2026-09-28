@@ -72,16 +72,28 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 | `myip-ms-latest-blacklist` | myip.ms latest | content, 168 h |
 | `hagezi-tif` | HaGeZi Threat Intelligence Feed (IPs) | content, 168 h |
 | `drb-ra-IPC2s-30day` | C2IntelFeeds, C2 IPs, 30 days | content, 168 h |
+| `threatfox-ipport` | abuse.ch ThreatFox, recent `ip:port` IOCs (botnet C2), confidence ≥ 75 | provider timestamp, 72 h |
+| `threatview-high-confidence` | Threatview.io high-confidence IPs | content, 168 h |
 
 Spamhaus copyright, terms, source and provider date are carried into its snapshot
 and into the combined file.
+
+Each provider's terms of use apply. ThreatFox (abuse.ch) grants free use under
+fair-use principles and may require a paid subscription for commercial use;
+Threatview does not state redistribution terms. Neither explicitly covers
+republishing in a public repository.
 
 ## Validation
 
 Every source must pass all checks before its data is accepted:
 
 - **Integrity**: HTTPS only (no downgrade), at most 64 MiB, strict UTF-8, no
-  invalid rows, at least `minimum_entries` entries.
+  invalid rows, at least `minimum_entries` entries. A reviewed source may drop up
+  to `max_invalid_rows` malformed upstream rows (at most 100; counted as
+  `excluded_invalid`); published snapshots never contain any.
+- **Formats**: plain lists (first field), CSV, Spamhaus JSON, and ThreatFox CSV
+  (`threatfox_csv`: the address from `ioc_value`, rows below `min_confidence`
+  dropped, any unexpected row rejects the file).
 - **Scope**: no network broader than `/12`, no default route. Special-use entries
   are removed; more than 1% of them (one is tolerated) rejects the file. FireHOL
   level 1 may keep its reviewed fullbogon prefixes (`allowed_special`) in its own
@@ -121,7 +133,7 @@ replacement is not accepted just because it is retried.
 ## Redundancy suppression
 
 Sources marked `redundancy_candidate` (`firehol-et-block`, `firehol-dshield-1d`,
-`firehol-myip`, `cins-army`) are dropped from the union while they add nothing
+`firehol-myip`, `cins-army`, `threatview-high-confidence`) are dropped from the union while they add nothing
 beyond the healthy non-candidate sources, and only after at least 14 elapsed days
 with 14 distinct daily observations. A gap over 48 hours or any unique address
 resets the observation; candidates cannot justify each other's removal. Suppressed
@@ -190,7 +202,8 @@ router; the router keeps its last downloaded list.
 
 **Add a source**: add an entry to `sources.json` (unique `name` and `https://`
 URL, `minimum_entries`, optional `freshness`, `parser`, `max_unchanged_hours`,
-`max_churn_ratio`) and open a PR. The first refresh after merging fetches it.
+`max_churn_ratio`, `max_invalid_rows`, `min_confidence`, `allow_ipv6`,
+`redundancy_candidate`) and open a PR. The first refresh after merging fetches it.
 
 **Remove a source**: delete it from `sources.json` and rebuild the snapshot
 offline in the same PR:
@@ -257,6 +270,8 @@ produced by the scripts and verified byte for byte.
     abuse.ch SSLBL is discontinued as well.
   - Content-based freshness, combined plausibility check, offline rebuild and
     pending new sources added.
+  - ThreatFox (`threatfox-ipport`) and Threatview (`threatview-high-confidence`)
+    added.
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).

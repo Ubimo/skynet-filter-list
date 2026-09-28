@@ -50,8 +50,14 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
             raise ValueError(f"Invalid source name: {name}")
         if name in names or url in urls or not url.startswith("https://"):
             raise ValueError(f"Duplicate name/URL or non-HTTPS source: {name}")
-        if feed.get("parser", "first_field") not in ("first_field", "csv", "spamhaus_json"):
+        if feed.get("parser", "first_field") not in ("first_field", "csv", "spamhaus_json", "threatfox_csv"):
             raise ValueError(f"Unknown parser: {name}")
+        confidence = feed.get("min_confidence", 75)
+        if isinstance(confidence, bool) or not isinstance(confidence, int) or not 0 <= confidence <= 100:
+            raise ValueError(f"Invalid min_confidence: {name}")
+        tolerated = feed.get("max_invalid_rows", 0)
+        if isinstance(tolerated, bool) or not isinstance(tolerated, int) or not 0 <= tolerated <= 100:
+            raise ValueError(f"Invalid max_invalid_rows: {name}")
         if not isinstance(feed["minimum_entries"], int) or feed["minimum_entries"] < 1:
             raise ValueError(f"Invalid minimum_entries: {name}")
         allowed = set(feed.get("allowed_special", []))
@@ -95,8 +101,24 @@ def download(url: str, timeout: float = 30, retries: int = 1) -> str:
     raise AssertionError("unreachable")
 
 
+def threatfox_rows(body: str, feed: dict) -> str:
+    """ThreatFox ip:port CSV export -> one address per line, filtered by confidence.
+    Columns: first_seen_utc, ioc_id, ioc_value, ioc_type, ..., confidence_level (10th)."""
+    lines = [line for line in body.splitlines() if line.strip() and not line.lstrip().startswith('#')]
+    minimum = feed.get('min_confidence', 75)
+    selected = []
+    for row in csv.reader(lines, skipinitialspace=True):
+        if len(row) < 10 or row[3] != 'ip:port' or not row[9].isdigit() or ':' not in row[2]:
+            raise ValueError(f'Invalid ThreatFox row: {row[:4]}')
+        if int(row[9]) >= minimum:
+            selected.append(row[2].rsplit(':', 1)[0].strip('[]'))
+    return '\n'.join(selected)
+
+
 def parse(body: str, feed: dict, *, published: bool = False) -> Parsed:
     result = Parsed(set())
+    if not published and feed.get('parser') == 'threatfox_csv':
+        body = threatfox_rows(body, feed)
     if not published and feed.get('parser') == 'spamhaus_json':
         rows = [json.loads(line) for line in body.splitlines() if line.strip()]
         if any('cidr' not in row and row.get('type') != 'metadata' for row in rows):
@@ -127,7 +149,9 @@ def parse(body: str, feed: dict, *, published: bool = False) -> Parsed:
             result.excluded_special += 1
             continue
         result.networks.add(network)
-    if result.invalid:
+    # Upstream only, per reviewed source: a few malformed rows (e.g. leading-zero
+    # octets) are dropped instead of rejecting the file. Published files: never.
+    if result.invalid > (0 if published else feed.get("max_invalid_rows", 0)):
         raise ValueError(f"{result.invalid} invalid non-comment rows")
     if published and (result.ipv6 or result.excluded_special):
         raise ValueError("Published file contains IPv6 or unapproved special-use entries")

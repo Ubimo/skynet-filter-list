@@ -83,6 +83,7 @@ def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
             "url": feed["url"], "status": "ok", "last_success": timestamp(now),
             "checked_at": timestamp(now), "metrics": current,
             "excluded_ipv6": parsed.ipv6, "excluded_special": parsed.excluded_special,
+            "excluded_invalid": parsed.invalid,
             "error": None, "turnover": churn, **meta,
             "content_changed_at": timestamp(changed), "sha256": sha256,
         }
