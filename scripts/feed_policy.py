@@ -79,7 +79,9 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
 
 def unchanged_limit(feed: dict):
     """Hours a source may serve identical content; None disables the check.
-    Sources with a provider timestamp are aged by that timestamp instead."""
+    Sources with a provider timestamp are aged by that timestamp instead.
+    An explicit `"max_unchanged_hours": null` is a reviewed opt-out for a source
+    that is deliberately kept although it no longer changes."""
     return feed.get('max_unchanged_hours', None if feed.get('freshness') else MAX_UNCHANGED_HOURS)
 
 

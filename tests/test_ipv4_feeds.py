@@ -302,6 +302,26 @@ class UpdateTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_feeds(self.root)
 
+    def test_explicit_null_disables_unchanged_check_for_that_source_only(self):
+        self.feeds[0] = dict(FEED, max_unchanged_hours=None)
+        self.write_feeds()
+        one, two = (f['url'] for f in self.feeds)
+        self.run_update()
+        for step, hours in enumerate((60, 120, 180, 240), start=1):
+            # 'two' changes every run and stays healthy; 'one' never changes.
+            body = BODY + ('8.8.4.5\n' if step % 2 else '')
+            self.assertFalse(self.run_update(NOW + timedelta(hours=hours), {one: BODY, two: body}))
+            self.assertEqual(self.state()['one']['status'], 'ok')
+        self.assertEqual(self.state()['one']['content_changed_at'], NOW.isoformat(timespec='seconds'))
+        self.audit(NOW + timedelta(hours=240))
+        # The default still applies to every other source: 'two' unchanged since
+        # 240h -> ok at 360h (120h), stale at 409h (169h; last success 49h ago).
+        self.assertFalse(self.run_update(NOW + timedelta(hours=360), {one: BODY, two: body}))
+        self.assertEqual(self.state()['two']['status'], 'ok')
+        self.assertTrue(self.run_update(NOW + timedelta(hours=409), {one: BODY, two: body}))
+        self.assertEqual(self.state()['two']['status'], 'stale')
+        self.assertEqual(self.state()['one']['status'], 'ok')
+
     def test_removed_source_and_large_combined_change_are_published_but_flagged(self):
         one, two = (f['url'] for f in self.feeds)
         self.assertFalse(self.run_update(bodies={one: BODY, two: '9.9.9.1\n9.9.9.2\n9.9.9.3\n9.9.9.4\n9.9.9.5\n'}))

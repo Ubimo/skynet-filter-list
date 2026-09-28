@@ -62,6 +62,7 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 | `firehol-et-block` | Emerging Threats block (FireHOL) | provider timestamp, 168 h |
 | `firehol-dshield-1d` | DShield top blocks, 1 day (FireHOL) | provider timestamp, 168 h |
 | `firehol-myip` | myip.ms (FireHOL) | provider timestamp, 168 h |
+| `firehol-blocklist-net-ua` | blocklist.net.ua (FireHOL); upstream frozen since 2026-09-21 | **none** (explicitly disabled) |
 | `cins-army` | CINS Army | content, 168 h |
 | `ipsum-level2` | IPsum level 2 | content, 168 h |
 | `blocklist-de-export-ips-all` | blocklist.de all | content, 168 h |
@@ -107,7 +108,9 @@ Every source must pass all checks before its data is accepted:
   or future timestamps are rejected. Re-downloading an old file never makes it newer.
 - **Freshness by content**: sources without a provider timestamp record
   `content_changed_at`. Content unchanged for more than 168 hours
-  (`max_unchanged_hours` per source) counts as expired.
+  (`max_unchanged_hours` per source) counts as expired. `"max_unchanged_hours":
+  null` is an explicit, reviewed opt-out for a source kept on purpose although it
+  no longer changes.
 
 The combined list has its own plausibility check: if its public coverage changes
 beyond 0.5x to 2x of the previous run, it is still published (every source passed
@@ -272,6 +275,10 @@ produced by the scripts and verified byte for byte.
     pending new sources added.
   - ThreatFox (`threatfox-ipport`) and Threatview (`threatview-high-confidence`)
     added.
+  - `firehol-blocklist-net-ua` re-added at the owner's request, without any age
+    limit. Its upstream (also the original CSV at blocklist.net.ua) has not
+    changed since 2026-09-21; by the provider's own unban dates, 14% of its
+    entries had expired at that point. It stays until removed manually.
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).

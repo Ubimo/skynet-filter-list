@@ -11,6 +11,13 @@
     "policy_note": "2026-09-28: reviewed direct HTTPS feed contains 382 valid public IPv4 hosts; floor reset to half that count. Relative count, coverage and turnover guards remain enabled."
   },
   {
+    "name": "firehol-blocklist-net-ua",
+    "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
+    "minimum_entries": 44137,
+    "max_unchanged_hours": null,
+    "policy_note": "2026-09-28: re-added at the owner's explicit request WITHOUT any age limit. Upstream (blocklist.net.ua, also its original CSV) has not changed since 2026-09-21 19:30 UTC; per the provider's own UNBAN_DATE, 14.1% of entries had expired at review. No freshness policy and max_unchanged_hours disabled on purpose: the frozen list stays until it is removed manually. Size and turnover guards still apply."
+  },
+  {
     "name": "cins-army",
     "url": "https://cinsscore.com/list/ci-badguys.txt",
     "minimum_entries": 3750,
