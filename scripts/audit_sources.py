@@ -84,7 +84,10 @@ def validate(root: Path = ROOT, *, now: datetime | None = None, read=None) -> No
         raise ValueError('Combined coverage contains special-use space')
     if not combined or body != combined_body(combined, state['sources']):
         raise ValueError('Combined file does not exactly equal validated sources minus exceptions')
-    if state['combined'] != {'entries': len(combined), 'sha256': digest(body)}:
+    expected = {'entries': len(combined), 'sha256': digest(body)}
+    if 'public_addresses' in state['combined']:  # absent in snapshots before this field existed
+        expected['public_addresses'] = sum(n.num_addresses for n in combined)
+    if state['combined'] != expected:
         raise ValueError('Combined hash/count mismatch')
     if read("AUDIT.md") != render_report(feeds, state):
         raise ValueError("AUDIT.md is not synchronized with status.json")

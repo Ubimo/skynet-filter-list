@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import io
 import ipaddress
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -16,6 +17,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from feed_policy import check_change, download, load_feeds, metrics, parse, serialize
 from update_ipv4_feeds import update
 from audit_sources import validate
+from rebuild_snapshot import rebuild
 
 FEED = {'name': 'one', 'url': 'https://example.com/one', 'minimum_entries': 1}
 NOW = datetime(2026, 9, 10, tzinfo=timezone.utc)
@@ -260,8 +262,86 @@ class UpdateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(self.root, now=NOW, read=read)
 
+    def write_feeds(self):
+        (self.root / 'sources.json').write_text(json.dumps(self.feeds), encoding='utf-8')
+
+    def test_unchanged_content_without_provider_date_goes_stale_then_disabled(self):
+        one, two = (f['url'] for f in self.feeds)
+        self.run_update()
+        bodies = {one: BODY, two: BODY + '8.8.4.5\n'}
+        self.assertFalse(self.run_update(NOW + timedelta(hours=100), bodies))
+        self.assertEqual(self.state()['one']['content_changed_at'], NOW.isoformat(timespec='seconds'))
+        # 169h unchanged exceeds the 168h default; last accepted data is 69h old.
+        self.assertTrue(self.run_update(NOW + timedelta(hours=169), bodies))
+        self.assertEqual(self.state()['one']['status'], 'stale')
+        self.assertIn('unchanged', self.state()['one']['error'])
+        self.assertTrue(self.state()['one']['included'])
+        self.audit(NOW + timedelta(hours=169))
+        # Retrying identical content never refreshes its age: disabled after 72h.
+        self.assertTrue(self.run_update(NOW + timedelta(hours=173), bodies))
+        self.assertEqual(self.state()['one']['status'], 'disabled')
+        self.assertFalse(self.state()['one']['included'])
+        self.audit(NOW + timedelta(hours=173))
+        bodies[one] = BODY + '8.8.4.6\n'
+        self.assertFalse(self.run_update(NOW + timedelta(hours=174), bodies))
+        self.assertEqual(self.state()['one']['status'], 'ok')
+        self.assertEqual(self.state()['one']['content_changed_at'],
+                         (NOW + timedelta(hours=174)).isoformat(timespec='seconds'))
+        self.audit(NOW + timedelta(hours=174))
+
+    def test_unchanged_limit_is_configurable_and_validated(self):
+        self.feeds[0] = dict(FEED, max_unchanged_hours=24)
+        self.write_feeds()
+        one, two = (f['url'] for f in self.feeds)
+        self.run_update()
+        self.assertTrue(self.run_update(NOW + timedelta(hours=25), {one: BODY, two: BODY + '8.8.4.5\n'}))
+        self.assertEqual(self.state()['one']['status'], 'stale')
+        self.assertEqual(self.state()['two']['status'], 'ok')
+        for invalid in (0, -1, 'x', True):
+            (self.root / 'sources.json').write_text(json.dumps([dict(FEED, max_unchanged_hours=invalid)]))
+            with self.assertRaises(ValueError):
+                load_feeds(self.root)
+
+    def test_removed_source_and_large_combined_change_are_published_but_flagged(self):
+        one, two = (f['url'] for f in self.feeds)
+        self.assertFalse(self.run_update(bodies={one: BODY, two: '9.9.9.1\n9.9.9.2\n9.9.9.3\n9.9.9.4\n9.9.9.5\n'}))
+        self.feeds = self.feeds[:1]
+        self.write_feeds()
+        self.assertFalse(self.run_update(NOW + timedelta(hours=1), {one: BODY}))
+        state = json.loads((self.root / 'generated/status.json').read_text())
+        self.assertEqual(set(state['sources']), {'one'})
+        self.assertEqual(state['combined']['public_addresses'], 4)
+        self.assertIn('9 -> 4', state['combined_anomaly'])
+        self.assertIn('9 -> 4', json.loads((self.root / '.update-result.json').read_text())['combined_anomaly'])
+        self.assertIn('Combined coverage anomaly', (self.root / 'AUDIT.md').read_text())
+        self.audit(NOW + timedelta(hours=1))
+        # Alarm fires once; the new coverage becomes the next baseline.
+        self.assertFalse(self.run_update(NOW + timedelta(hours=2), {one: BODY}))
+        self.assertIsNone(json.loads((self.root / 'generated/status.json').read_text())['combined_anomaly'])
+        self.audit(NOW + timedelta(hours=2))
+
+    def test_offline_rebuild_after_removing_source_passes_exact_audit(self):
+        one, two = (f['url'] for f in self.feeds)
+        self.run_update(bodies={one: BODY, two: '9.9.9.1\n'})
+        self.feeds = self.feeds[:1]
+        self.write_feeds()
+        with self.assertRaisesRegex(ValueError, 'configured sources'):
+            self.audit()
+        self.assertEqual(rebuild(self.root), ['two'])
+        self.audit()
+        self.assertFalse((self.root / 'generated/two.ipv4').exists())
+        self.assertNotIn('9.9.9.1', (self.root / 'generated/combined.ipv4').read_text())
+        self.feeds.append(dict(FEED, name='three', url='https://example.com/three'))
+        self.write_feeds()
+        with self.assertRaisesRegex(ValueError, 'normal update'):
+            rebuild(self.root)
+
 
 class RepositoryTests(unittest.TestCase):
+    # The update job skips this: it validates the freshly generated candidate
+    # after refresh instead, so a config change (e.g. a removed source) cannot
+    # block the refresh that would make the committed snapshot consistent again.
+    @unittest.skipIf(os.environ.get('SKIP_COMMITTED_SNAPSHOT') == '1', 'validated after refresh')
     def test_exact_committed_snapshot(self):
         validate(ROOT)
 

@@ -94,6 +94,19 @@ without a supported provider timestamp are explicitly shown as `unknown`; the
 system does not invent their data age. Provider dates describe the supplied file,
 not necessarily every observation or component inside an aggregate feed.
 
+Sources without a provider timestamp are aged by content instead: `status.json`
+records `content_changed_at`, the last time the accepted snapshot changed. Content
+unchanged for more than **168 hours** (per source: `max_unchanged_hours`) is
+treated like expired provider data: the source becomes `stale` (the run fails, the
+last accepted data stays usable for at most 72 hours) and then `disabled` until its
+content changes again. Retrying identical content never refreshes its age. For
+sources without history the clock starts at the first run with this check.
+
+The whole list has a plausibility limit too: if the public coverage of
+`combined.ipv4` changes beyond **0.5x to 2x** of the previous run, the result is
+still published (every source passed its own checks), but `combined_anomaly` is
+recorded, shown in `AUDIT.md` and the run fails once so the swing is reviewed.
+
 The broader prefixes that can result from exact output aggregation are validated
 by full set equivalence to the already checked inputs, rather than applying the
 upstream `/12` guard to the merged file. This preserves safety without preventing
@@ -163,16 +176,34 @@ a 30-second socket timeout and one retry. Run only one updater per local checkou
 
 PR checks are offline and inspect the exact submitted files without regenerating
 over them. The update job checks out current `main`, refreshes sources, validates
-the exact candidate and pushes only if the base has not changed. It does not copy
+the exact candidate and pushes only if the base has not changed. Its regression
+tests skip the committed-snapshot check (`SKIP_COMMITTED_SNAPSHOT=1`), because the
+freshly generated candidate is validated right after refresh; a config change can
+therefore never block the run that repairs it. It does not copy
 old outputs onto newer code or force-push. After publishing, the raw files are
 verified at the immutable commit SHA, including exact combined coverage, hashes,
-source files, exceptions, manifest and report.
+source files, exceptions, manifest and report. The runner is pinned to
+`ubuntu-24.04`; Dependabot proposes updates for the SHA-pinned actions weekly.
 
 Updater exit codes: `0` means the update completed without unexpected source
 failures (an expected quarantine is allowed); `2` means the update completed with
-stale/disabled feeds; other errors abort. Run the audit even after exit `2`.
+stale/disabled feeds or a combined coverage anomaly; other errors abort. Run the
+audit even after exit `2`.
 An empty combined list cannot pass publication validation. Individual file writes
 are atomic, and the full candidate is published in one Git commit.
+
+To **remove** a source, delete it from `sources.json` and rebuild the snapshot
+offline in the same PR, so the PR check stays green:
+
+```sh
+python scripts/rebuild_snapshot.py
+python -m unittest discover -s tests -v
+python scripts/audit_sources.py
+```
+
+The rebuild uses only the committed, already validated snapshots (no downloads),
+drops the removed records and files, and recomputes the combined list and the
+redundancy evidence. New or changed sources require a normal update run.
 
 For a reviewed, intentional large source change, remove only that source's record
 from `generated/status.json`, regenerate, audit and review the diff before
