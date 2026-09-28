@@ -51,7 +51,8 @@ jobs:
       - name: Test submitted files without overwriting them or contacting upstreams
         run: python -m unittest discover -s tests -v
       - name: Audit exact submitted snapshot
-        run: python scripts/audit_sources.py
+        # Newly added sources get their first snapshot from the update job after merge.
+        run: python scripts/audit_sources.py --allow-new-sources
 
   update:
     if: github.event_name != 'pull_request'

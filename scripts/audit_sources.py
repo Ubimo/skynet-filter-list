@@ -14,9 +14,11 @@ from feed_analysis import combine, load_allowlist, overlaps_special
 from feed_freshness import fallback_fresh
 
 
-def validate(root: Path = ROOT, *, now: datetime | None = None, read=None) -> None:
+def validate(root: Path = ROOT, *, now: datetime | None = None, read=None, allow_pending: bool = False) -> None:
     # In historical/PR validation use the recorded audit time; --current enforces
     # wall-clock age for publication and monitoring.
+    # allow_pending (PR checks only): a newly configured source has no snapshot
+    # until the update job fetches it; everything already recorded stays exact.
     read = read or (lambda path: (root / path).read_text(encoding="utf-8"))
     feeds = load_feeds(root)
     state = json.loads(read("generated/status.json"))
@@ -25,8 +27,10 @@ def validate(root: Path = ROOT, *, now: datetime | None = None, read=None) -> No
     if checked.tzinfo is None or checked > now:
         raise ValueError("Invalid audit timestamp")
     names = {feed["name"] for feed in feeds}
-    if set(state["sources"]) != names:
+    pending = names - set(state["sources"])
+    if set(state["sources"]) - names or (pending and not allow_pending):
         raise ValueError("Source status does not match configured sources")
+    feeds = [feed for feed in feeds if feed["name"] not in pending]
     manifest = read("filter.list").splitlines()
     if not manifest or len(manifest) != len(set(manifest)):
         raise ValueError("Empty manifest or duplicate source URLs")
@@ -99,7 +103,11 @@ def main() -> None:
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--current", action="store_true")
     parser.add_argument("--remote-ref", help="Verify raw GitHub content at this immutable commit SHA")
+    parser.add_argument("--allow-new-sources", action="store_true",
+                        help="PR checks: accept configured sources that have no snapshot yet")
     args = parser.parse_args()
+    if args.allow_new_sources and (args.current or args.remote_ref):
+        parser.error("--allow-new-sources is only for offline PR validation")
     read = None
     if args.remote_ref:
         if not re.fullmatch(r"[0-9a-f]{40}", args.remote_ref):
@@ -109,7 +117,8 @@ def main() -> None:
         if download(prefix + "sources.json") != (args.root / "sources.json").read_text(encoding="utf-8"):
             raise ValueError("Remote source configuration differs from checkout")
         read = lambda path: download(prefix + path)
-    validate(args.root, now=datetime.now(timezone.utc) if args.current else None, read=read)
+    validate(args.root, now=datetime.now(timezone.utc) if args.current else None, read=read,
+             allow_pending=args.allow_new_sources)
 
 
 if __name__ == "__main__":

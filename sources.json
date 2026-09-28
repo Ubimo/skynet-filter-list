@@ -5,30 +5,17 @@
     "minimum_entries": 1106
   },
   {
-    "name": "feodotracker",
-    "url": "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",
-    "minimum_entries": 1,
-    "freshness": {
-      "type": "iso_comment",
-      "max_age_hours": 72
-    },
-    "quarantine_on_stale": true
-  },
-  {
     "name": "binarydefense",
     "url": "https://www.binarydefense.com/banlist.txt",
     "minimum_entries": 191,
     "policy_note": "2026-09-28: reviewed direct HTTPS feed contains 382 valid public IPv4 hosts; floor reset to half that count. Relative count, coverage and turnover guards remain enabled."
   },
   {
-    "name": "firehol-ciarmy",
-    "url": "https://iplists.firehol.org/files/ciarmy.ipset",
+    "name": "cins-army",
+    "url": "https://cinsscore.com/list/ci-badguys.txt",
     "minimum_entries": 3750,
-    "freshness": {
-      "type": "firehol",
-      "max_age_hours": 168
-    },
-    "redundancy_candidate": true
+    "redundancy_candidate": true,
+    "policy_note": "2026-09-28: replaces the FireHOL ciarmy mirror (same CI Army data, ~6h fresher). No provider timestamp; aged by content via max_unchanged_hours."
   },
   {
     "name": "firehol-cybercrime",
