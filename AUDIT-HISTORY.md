@@ -107,3 +107,27 @@ Upstream:
 - `https://darklist.de/raw.php`: most recently returned no IP entries
 - `https://iplists.firehol.org/files/normshield_high_attack.ipset`: empty and outdated
 - `https://www.talosintelligence.com/documents/ip-blacklist`: HTTP 403
+# September 28, 2026: reviewed source-size changes
+
+Run [36395668672](https://github.com/Ubimo/skynet-filter-list/actions/runs/36395668672)
+published and verified healthy updates, then correctly reported degraded sources:
+
+- Binary Defense returned 382 public IPv4 hosts, below the static floor of 663
+  and down from the last accepted 6,344. A fresh direct HTTPS download reproduced
+  the 382 entries with the provider's normal header, no invalid rows, IPv6,
+  special-use addresses or broad networks. The provider gives no observation
+  timestamp or explanation for the reduction; this review verifies the supplied
+  feed's structure, not the accuracy of every threat classification. Its old
+  FireHOL mirror dates to March and was not used as a replacement.
+- HaGeZi TIF returned 34,882 hosts versus the accepted 72,304 (48.24%), below
+  the relative 50% floor. The current plain-IP set exactly matched the provider's
+  AdGuard companion, `adblock/tif-ips.txt`; the current upstream release was
+  `11c25a48bd35b7c2f056cac772841c1c664eac63` (September 27).
+
+The two source baselines were deliberately reset once using the procedure in
+README.md, followed by regeneration and exact-snapshot validation. Binary
+Defense's absolute floor is now 191 (half the reviewed 382-host snapshot).
+All relative size/coverage limits, turnover checks, special-use restrictions,
+72-hour fallback expiry and workflow failure reporting remain enabled.
+Future abnormal changes must still fail validation; this is not an automatic
+baseline reset or an exemption for either provider.
