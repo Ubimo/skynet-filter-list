@@ -195,6 +195,7 @@
     "minimum_entries": 5100,
     "max_invalid_rows": 10,
     "redundancy_candidate": true,
-    "policy_note": "2026-09-28: 20,497 valid public IPv4 hosts at review; upstream contains a few malformed rows (leading-zero octets), up to 10 are dropped. No provider timestamp; aged by content. Floor = 25% of reviewed count."
+    "policy_note": "2026-09-28: 19,939 valid public IPv4 hosts at review (plus 558 IPv6, dropped via allow_ipv6); upstream contains a few malformed rows (leading-zero octets), up to 10 are dropped. No provider timestamp; aged by content. Floor = ~25% of reviewed IPv4 count.",
+    "allow_ipv6": true
   }
 ]
