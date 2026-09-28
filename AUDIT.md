@@ -3,9 +3,9 @@
 Automatically generated; historical notes are in `AUDIT-HISTORY.md`.
 
 - Checked at: 2026-09-28T09:03:58+00:00
-- Configured sources: 25
-- Contributing sources: 22
-- Combined IPv4/CIDR entries: 225073
+- Configured sources: 24
+- Contributing sources: 21
+- Combined IPv4/CIDR entries: 96757
 - Active / expired exceptions: 0 / 0
 - Maximum fallback age: 72 hours
 
@@ -17,7 +17,6 @@ Last success means successful retrieval and validation, not an upstream observat
 | [greensnow](https://blocklist.greensnow.co/greensnow.txt) | ok | True | 5452 | unknown | 2026-09-28T09:03:58+00:00 |
 | [feodotracker](https://feodotracker.abuse.ch/downloads/ipblocklist.txt) | quarantined | False | 0 | 2026-03-04T14:28:39+00:00 | never |
 | [binarydefense](https://www.binarydefense.com/banlist.txt) | ok | True | 382 | unknown | 2026-09-28T09:03:58+00:00 |
-| [firehol-blocklist-net-ua](https://iplists.firehol.org/files/blocklist_net_ua.ipset) | ok | True | 203021 | 2026-09-21T19:30:31+00:00 | 2026-09-28T09:03:58+00:00 |
 | [firehol-ciarmy](https://iplists.firehol.org/files/ciarmy.ipset) | ok | True | 15000 | 2026-09-28T04:04:01+00:00 | 2026-09-28T09:03:58+00:00 |
 | [firehol-cybercrime](https://iplists.firehol.org/files/cybercrime.ipset) | ok | True | 469 | 2026-09-27T10:16:54+00:00 | 2026-09-28T09:03:58+00:00 |
 | [firehol-dshield-1d](https://iplists.firehol.org/files/dshield_1d.netset) | ok | False | 30 | 2026-09-28T00:59:40+00:00 | 2026-09-28T09:03:58+00:00 |
@@ -44,7 +43,7 @@ Last success means successful retrieval and validation, not an upstream observat
 
 | Candidate | Zero-contribution days | Additional addresses | Suppressed |
 |---|---:|---:|---|
-| firehol-ciarmy | 0 | 820 | False |
+| firehol-ciarmy | 0 | 847 | False |
 | firehol-dshield-1d | 19 | 0 | True |
 | firehol-et-block | 10 | 0 | False |
 | firehol-myip | 19 | 0 | True |

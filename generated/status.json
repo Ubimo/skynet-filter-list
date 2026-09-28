@@ -58,30 +58,6 @@
       "sha256": "5e07b19cb689396af83fe26b8921aec192da3abf17a523ff517eb51eccccab84",
       "included": true
     },
-    "firehol-blocklist-net-ua": {
-      "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
-      "status": "ok",
-      "last_success": "2026-09-28T09:03:58+00:00",
-      "checked_at": "2026-09-28T09:03:58+00:00",
-      "metrics": {
-        "entries": 203021,
-        "public_addresses": 203021
-      },
-      "excluded_ipv6": 0,
-      "excluded_special": 1,
-      "error": null,
-      "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
-      },
-      "upstream_updated_at": "2026-09-21T19:30:31+00:00",
-      "upstream_deadline": "2026-09-28T19:30:31+00:00",
-      "attribution": [],
-      "sha256": "0921ea258b3ce986f5c0180ed1d0998061430d2c342237f301e3fe5cb54aa5ab",
-      "included": true
-    },
     "firehol-ciarmy": {
       "url": "https://iplists.firehol.org/files/ciarmy.ipset",
       "status": "ok",
@@ -607,7 +583,7 @@
       "since": null,
       "last_observed": "2026-09-28T09:03:58+00:00",
       "days": 0,
-      "unique_addresses": 820,
+      "unique_addresses": 847,
       "suppressed": false
     },
     "firehol-dshield-1d": {
@@ -663,8 +639,8 @@
     }
   },
   "combined": {
-    "entries": 225073,
-    "sha256": "e032e6cb27850789e5d86031cb6e34c91d63e4648baaf36bbcf46a14d4f421b2"
+    "entries": 96757,
+    "sha256": "e2b92079210cc3d8536abf61584df04102e4384ec928b2c293b98cfa8bd8c67a"
   },
   "allowlist_active": [],
   "allowlist_expired": []
