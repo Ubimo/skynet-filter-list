@@ -177,6 +177,65 @@ class UpdateTests(unittest.TestCase):
             self.assertIn('Anomalous', self.state()['one']['error'])
             self.audit(NOW + timedelta(hours=hours))
 
+    def grown(self, count=9, first=1):
+        return ''.join(f'8.8.5.{i}\n' for i in range(first, first + count)) + BODY
+
+    def test_growth_beyond_2x_is_accepted_after_confirmation(self):
+        # Regression for binarydefense 382 -> 766: a persistent, genuine growth
+        # must not stay rejected until the fallback expires.
+        self.run_update()
+        bodies = {self.feeds[0]['url']: self.grown(), self.feeds[1]['url']: BODY}
+        self.assertFalse(self.run_update(NOW + timedelta(hours=1), bodies))
+        record = self.state()['one']
+        self.assertEqual((record['status'], record['metrics']['entries']), ('stale', 4))
+        self.assertEqual(record['pending_shift']['metrics']['entries'], 13)
+        self.assertIn('Pending level shift: one 4 -> 13', (self.root / 'AUDIT.md').read_text())
+        self.audit(NOW + timedelta(hours=1))
+        # Seen again, but not yet 12h after first observation: still pending.
+        self.assertFalse(self.run_update(NOW + timedelta(hours=12), bodies))
+        self.assertEqual(self.state()['one']['status'], 'stale')
+        self.assertFalse(self.run_update(NOW + timedelta(hours=13), bodies))
+        record = self.state()['one']
+        self.assertEqual((record['status'], record['metrics']['entries']), ('ok', 13))
+        self.assertNotIn('pending_shift', record)
+        self.assertEqual(record['level_shift_accepted']['first_seen'],
+                         (NOW + timedelta(hours=1)).isoformat(timespec='seconds'))
+        self.audit(NOW + timedelta(hours=13))
+        self.assertFalse(self.run_update(NOW + timedelta(hours=37), bodies))
+        self.assertNotIn('level_shift_accepted', self.state()['one'])
+
+    def test_moving_growth_restarts_confirmation(self):
+        self.run_update()
+        for hours, count in ((1, 9), (14, 12), (25, 12)):
+            self.run_update(NOW + timedelta(hours=hours),
+                            {self.feeds[0]['url']: self.grown(count), self.feeds[1]['url']: BODY})
+        self.assertEqual(self.state()['one']['status'], 'stale')
+        self.assertEqual(self.state()['one']['pending_shift']['first_seen'],
+                         (NOW + timedelta(hours=14)).isoformat(timespec='seconds'))
+        self.run_update(NOW + timedelta(hours=27),
+                        {self.feeds[0]["url"]: self.grown(12), self.feeds[1]["url"]: BODY})
+        self.assertEqual(self.state()["one"]["metrics"]["entries"], 16)
+
+    def test_unconfirmed_growth_expires_and_fails_run(self):
+        self.run_update()
+        bodies = {self.feeds[0]['url']: self.grown(), self.feeds[1]['url']: BODY}
+        self.run_update(NOW + timedelta(hours=1), bodies)
+        # Upstream flips back and forth: never confirmed, fallback age still limited.
+        self.run_update(NOW + timedelta(hours=20), {self.feeds[0]['url']: ValueError('x'), self.feeds[1]['url']: BODY})
+        self.assertNotIn('pending_shift', self.state()['one'])
+        self.assertTrue(self.run_update(NOW + timedelta(hours=73), bodies))
+        self.assertEqual(self.state()['one']['status'], 'disabled')
+        self.audit(NOW + timedelta(hours=73))
+
+    def test_growth_confirmation_keeps_churn_guard(self):
+        self.run_update()
+        replaced = ''.join(f'9.9.9.{i}\n' for i in range(1, 14))
+        bodies = {self.feeds[0]['url']: replaced, self.feeds[1]['url']: BODY}
+        self.run_update(NOW + timedelta(hours=1), bodies)
+        self.assertTrue(self.run_update(NOW + timedelta(hours=14), bodies))
+        self.assertIn('turnover', self.state()['one']['error'])
+        self.assertEqual(self.state()['one']['metrics']['entries'], 4)
+
     def test_failed_first_download_has_no_unverified_fallback(self):
         bodies = {self.feeds[0]['url']: OSError('down'), self.feeds[1]['url']: BODY}
         self.assertTrue(self.run_update(bodies=bodies))

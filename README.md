@@ -100,7 +100,10 @@ Every source must pass all checks before its data is accepted:
   level 1 may keep its reviewed fullbogon prefixes (`allowed_special`) in its own
   snapshot only.
 - **Size**: entry count and public-address coverage must stay within 0.5x to 2x of
-  the last accepted snapshot.
+  the last accepted snapshot. A drop below 0.5x stays rejected. Growth beyond 2x
+  becomes a *pending level shift*: the last good snapshot keeps being used, and the
+  new level is accepted automatically once runs at least 12 hours apart see it again
+  within ±10% (all other checks, including turnover, still apply).
 - **Turnover**: at most 80% of the addresses may be replaced at once, even with an
   unchanged count (`max_churn_ratio` per source, after review).
 - **Freshness by provider timestamp**: FireHOL `Source File Date` (not the mirror's
@@ -130,8 +133,9 @@ that every listed address is malicious.
 | `quarantined` | known stale-data condition for sources with `quarantine_on_stale`; checked every run, returns automatically | no |
 
 `stale` and `disabled` fail the workflow, but only after all healthy updates have
-been published. `quarantined` is expected and does not fail it. An anomalous
-replacement is not accepted just because it is retried.
+been published. `quarantined` is expected and does not fail it, and neither does a
+`stale` source whose only problem is a pending level shift still inside its fallback
+window. An anomalous drop or replacement is not accepted just because it is retried.
 
 ## Redundancy suppression
 

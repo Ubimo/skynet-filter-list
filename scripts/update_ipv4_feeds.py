@@ -9,8 +9,9 @@ from pathlib import Path
 
 from feed_policy import (
     ROOT, RAW_PREFIX, MAX_STALE_HOURS, COMBINED_MIN_RATIO, COMBINED_MAX_RATIO,
-    atomic_write, check_change, digest, download, load_feeds, metrics, parse,
-    serialize, snapshot_body, unchanged_limit,
+    LEVEL_SHIFT_CONFIRM_HOURS, LevelShiftError, atomic_write, check_change, digest,
+    download, load_feeds, metrics, parse, serialize, shift_consistent, snapshot_body,
+    unchanged_limit,
 )
 from feed_analysis import combine, load_allowlist, select_sources, turnover
 from feed_freshness import StaleSourceError, fallback_fresh, metadata
@@ -57,9 +58,18 @@ def unchanged_since(previous: dict, sha256: str, now: datetime) -> datetime:
     return now
 
 
+def pending_since(pending: dict | None, now: datetime):
+    try:
+        since = datetime.fromisoformat(pending['first_seen'])
+        return since if since.tzinfo is not None and since <= now else None
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
     old = previous_snapshot(root, feed, previous, now)
     name = feed["name"]
+    shift = None
     try:
         upstream = fetch(feed["url"])
         meta = metadata(upstream, feed, now)
@@ -68,7 +78,18 @@ def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
         if previous.get("last_success") and old is None:
             raise ValueError("Recorded baseline is missing, corrupt or incompatible with policy")
         if old:
-            check_change(current, previous["metrics"])
+            try:
+                check_change(current, previous["metrics"])
+            except LevelShiftError:
+                pending = previous.get('pending_shift')
+                since = pending_since(pending, now)
+                if not (since and shift_consistent(pending, current)
+                        and now - since >= timedelta(hours=LEVEL_SHIFT_CONFIRM_HOURS)):
+                    raise
+                # Same new level seen again after the confirmation window: a real
+                # upstream change, not a glitch. All other checks still apply below.
+                shift = {'from': previous['metrics'], 'to': current, 'first_seen': pending['first_seen'],
+                         'accepted_at': timestamp(now)}
         churn = turnover(parsed.networks, parse(old[0], feed, published=True).networks, feed) if old else None
         if churn and max(churn['added_ratio'], churn['removed_ratio']) > feed.get('max_churn_ratio', 0.8):
             raise ValueError(f"Anomalous address turnover: {churn}")
@@ -86,13 +107,24 @@ def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
             "excluded_invalid": parsed.invalid,
             "error": None, "turnover": churn, **meta,
             "content_changed_at": timestamp(changed), "sha256": sha256,
+            **({"level_shift_accepted": shift} if shift else {}),
         }
         return name, record, body, True
     except Exception as error:
         active = (old is not None and now - old[1] <= timedelta(hours=MAX_STALE_HOURS)
                   and fallback_fresh(previous, feed, now))
         record = dict(previous) if previous else {"last_success": None}
+        record.pop("level_shift_accepted", None)
         record["url"] = feed["url"]
+        if isinstance(error, LevelShiftError):
+            pending = previous.get('pending_shift')
+            if not (pending_since(pending, now) and shift_consistent(pending, error.metrics)):
+                pending = {'first_seen': timestamp(now)}
+            # Latest observation, anchored to when this level was first seen.
+            record['pending_shift'] = {'first_seen': pending['first_seen'], 'metrics': error.metrics}
+        elif not isinstance(error, (OSError, TimeoutError)):
+            # A different content problem breaks the confirmation chain.
+            record.pop('pending_shift', None)
         if previous.get("last_success") and old is None:
             record["baseline_invalid"] = True
             record["baseline_url"] = previous.get("baseline_url", previous["url"])
@@ -105,8 +137,11 @@ def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
                 record = {'url': feed['url'], 'last_success': None}
         if isinstance(error, StaleSourceError):
             record['rejected_upstream_updated_at'] = error.updated.isoformat(timespec='seconds')
-        record.update(status=status, checked_at=timestamp(now),
-                      error=f"{type(error).__name__}: {error}")
+        message = f"{type(error).__name__}: {error}"
+        if record.get('pending_shift') and isinstance(error, LevelShiftError):
+            message += (f" (pending since {record['pending_shift']['first_seen']}; accepted automatically "
+                        f"if seen again after {LEVEL_SHIFT_CONFIRM_HOURS}h)")
+        record.update(status=status, checked_at=timestamp(now), error=message)
         return name, record, None, active
 
 
@@ -119,7 +154,16 @@ def render_report(feeds: list[dict], state: dict) -> str:
         f"- Combined IPv4/CIDR entries: {state['combined']['entries']}",
         *([f"- Combined coverage anomaly: {state['combined_anomaly']}"] if state.get('combined_anomaly') else []),
         f"- Active / expired exceptions: {len(state['allowlist_active'])} / {len(state['allowlist_expired'])}",
-        f"- Maximum fallback age: {MAX_STALE_HOURS} hours", "",
+        f"- Maximum fallback age: {MAX_STALE_HOURS} hours",
+        *[f"- Pending level shift: {f['name']} {state['sources'][f['name']]['metrics']['entries']} -> "
+          f"{state['sources'][f['name']]['pending_shift']['metrics']['entries']} entries, first seen "
+          f"{state['sources'][f['name']]['pending_shift']['first_seen']}"
+          for f in feeds if state['sources'][f['name']].get('pending_shift')
+          and state['sources'][f['name']]['status'] == 'stale'],
+        *[f"- Accepted level shift: {f['name']} {r['level_shift_accepted']['from']['entries']} -> "
+          f"{r['level_shift_accepted']['to']['entries']} entries, first seen {r['level_shift_accepted']['first_seen']}"
+          for f in feeds for r in [state['sources'][f['name']]] if r.get('level_shift_accepted')],
+        "",
         "Counts are unique IPv4/CIDR entries per source, not unique addresses across sources.",
         "Last success means successful retrieval and validation, not an upstream observation date.", "",
         "| Source | State | Included | Entries | Provider timestamp | Last success |",
@@ -177,7 +221,10 @@ def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, wo
         if active:
             feed = next(f for f in feeds if f['name'] == name)
             networks[name] = parse((root / f'generated/{name}.ipv4').read_text(encoding='utf-8'), feed, published=True).networks
-        degraded |= record["status"] in ('stale', 'disabled')
+        # A growth shift awaiting confirmation (still on its good fallback) is an
+        # expected, self-resolving state; it fails the run only once it expires.
+        confirming = record["status"] == 'stale' and 'pending_shift' in record and 'LevelShiftError' in (record["error"] or '')
+        degraded |= record["status"] in ('stale', 'disabled') and not confirming
         print(f"{name}: {record['status']}" + (f" ({record['error']})" if record["error"] else ""))
     state['redundancy'] = select_sources(feeds, state['sources'], networks, previous.get('redundancy', {}), now)
     selected = [ns for name, ns in networks.items() if state['sources'][name]['included']]

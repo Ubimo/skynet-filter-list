@@ -21,6 +21,11 @@ MAX_STALE_HOURS = 72
 MAX_UNCHANGED_HOURS = 168
 # Whole-list plausibility: public coverage of the combined file vs. last run.
 COMBINED_MIN_RATIO, COMBINED_MAX_RATIO = 0.5, 2.0
+# Per-source growth beyond 2x is not rejected forever: the new level becomes a
+# pending shift and is accepted once later runs, spanning at least this many
+# hours, observe it again within the tolerance. Drops below 0.5x stay rejected.
+LEVEL_SHIFT_CONFIRM_HOURS = 12
+LEVEL_SHIFT_TOLERANCE = 0.1
 # Conservative special-use policy; exceptions must be exact, reviewed prefixes.
 SPECIAL = tuple(ipaddress.IPv4Network(n) for n in (
     "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8",
@@ -176,11 +181,34 @@ def metrics(networks: set[ipaddress.IPv4Network], feed: dict) -> dict:
     }
 
 
+class LevelShiftError(ValueError):
+    """Growth beyond 2x only (no metric dropped below 0.5x): confirmable."""
+    def __init__(self, message, metrics):
+        super().__init__(message)
+        self.metrics = metrics
+
+
 def check_change(current: dict, previous: dict) -> None:
+    grown, shrunk = [], []
     for key in ("entries", "public_addresses"):
         old, new = previous[key], current[key]
-        if old and (new < old * 0.5 or new > old * 2):
-            raise ValueError(f"Anomalous {key}: {old} -> {new} (allowed 0.5x to 2x)")
+        if old and new < old * 0.5:
+            shrunk.append(f"Anomalous {key}: {old} -> {new} (allowed 0.5x to 2x)")
+        elif old and new > old * 2:
+            grown.append(f"Anomalous {key}: {old} -> {new} (allowed 0.5x to 2x)")
+    if shrunk:
+        raise ValueError("; ".join(shrunk + grown))
+    if grown:
+        raise LevelShiftError("; ".join(grown), dict(current))
+
+
+def shift_consistent(pending: dict | None, current: dict) -> bool:
+    """True if `current` matches a recorded pending shift within the tolerance."""
+    try:
+        return all(abs(current[k] - pending['metrics'][k]) <= pending['metrics'][k] * LEVEL_SHIFT_TOLERANCE
+                   for k in ("entries", "public_addresses"))
+    except (KeyError, TypeError):
+        return False
 
 
 def serialize(networks: set[ipaddress.IPv4Network]) -> str:
