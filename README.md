@@ -30,9 +30,9 @@ the list without credentials.
 
 ## What ends up in the list
 
-`combined.ipv4` is the exact union of all usable sources, minus active exceptions
-and minus all special-use ranges, with duplicates and adjacent networks collapsed.
-Aggregation never adds addresses.
+`combined.ipv4` is the exact union of all usable sources, minus active exceptions,
+minus protected infrastructure and minus all special-use ranges, with duplicates
+and adjacent networks collapsed. Aggregation never adds addresses.
 
 It never contains private, loopback, link-local, CGNAT, documentation, benchmark,
 multicast or reserved space (`0/8`, `10/8`, `100.64/10`, `127/8`, `169.254/16`,
@@ -167,7 +167,42 @@ and a timezone-aware expiry. Exceptions are subtracted even from broader upstrea
 networks. Expired entries stop applying on the next build and stay visible in the
 audit. Editing the file triggers the workflow.
 
-To find out why an address is blocked (offline, no network requests):
+## Protected infrastructure
+
+Some addresses must never be blocked, because the router itself depends on them.
+[`protected.json`](protected.json) removes them from the published list
+permanently, even when an upstream source lists them (on 2026-09-30, FireHOL
+level 3 contained three of the four `raw.githubusercontent.com` addresses, from
+which Skynet downloads this list, and two `github.com` addresses).
+
+- **`networks`**: reviewed static entries, always applied, even if every download
+  fails: GitHub's own ranges and the Cloudflare, Google and Quad9 DNS resolvers.
+  Each entry needs a canonical public IPv4 network of `/16` or narrower and a
+  reason.
+- **`github_meta`**: GitHub's published IPv4 ranges for the listed keys
+  (`web`, `api`, `git`, `pages`) from `https://api.github.com/meta`, fetched on
+  every update (authenticated, the token is sent only to `api.github.com`) and
+  stored as `generated/protected-github.ipv4`. A response with a range broader
+  than `/16`, special-use space, fewer than 4 ranges or more than 131,072
+  addresses is rejected. On failure the last good snapshot stays in force and the
+  run fails so it gets noticed; it never expires.
+
+The audit fails if the published list contains any protected address, and
+`status.json`/`AUDIT.md` show how many addresses protection removed and from which
+sources. To add an entry, edit `protected.json` and rebuild offline in the same PR:
+
+```sh
+python scripts/rebuild_snapshot.py
+python -m unittest discover -s tests -v
+python scripts/audit_sources.py
+```
+
+A new or changed `github_meta` configuration is recorded as `missing` (static
+protection only) until the next update run fetches it.
+
+## Lookup
+
+To find out why an address is blocked or protected (offline, no network requests):
 
 ```sh
 python scripts/lookup_ip.py 8.8.8.8
@@ -200,7 +235,8 @@ Dependabot proposes action updates weekly. No third-party Python packages are
 used.
 
 Updater exit codes: `0` success (an expected quarantine is fine), `2` completed
-with stale or disabled sources or a combined anomaly, anything else aborted.
+with stale or disabled sources, failed GitHub meta protection or a combined
+anomaly, anything else aborted.
 
 If Actions stops entirely, nothing here can expire data already loaded on a
 router; the router keeps its last downloaded list.
@@ -247,16 +283,18 @@ produced by the scripts and verified byte for byte.
 |---|---|
 | `sources.json` | source manifest and per-source policy |
 | `allowlist.json` | temporary exceptions |
+| `protected.json` | permanently protected infrastructure (static + GitHub meta) |
 | `filter.list` | manifest read by Skynet |
 | `generated/combined.ipv4` | published blocklist |
 | `generated/<source>.ipv4` | validated snapshot per source |
-| `generated/status.json` | state, hashes, metrics, errors, redundancy evidence |
+| `generated/protected-github.ipv4` | validated GitHub meta snapshot |
+| `generated/status.json` | state, hashes, metrics, errors, redundancy evidence, protection |
 | `AUDIT.md` | human-readable report, generated |
 | `scripts/update_ipv4_feeds.py` | fetch, validate, build |
 | `scripts/audit_sources.py` | exact audit of local or published files |
 | `scripts/rebuild_snapshot.py` | offline rebuild after removing sources |
 | `scripts/lookup_ip.py` | explain why an address is blocked |
-| `scripts/feed_policy.py`, `feed_freshness.py`, `feed_analysis.py` | parsing, freshness and interval logic |
+| `scripts/feed_policy.py`, `feed_freshness.py`, `feed_analysis.py`, `feed_protection.py` | parsing, freshness, interval and protection logic |
 | `tests/` | unit and integration tests |
 
 ## History
@@ -283,6 +321,10 @@ produced by the scripts and verified byte for byte.
     limit. Its upstream (also the original CSV at blocklist.net.ua) has not
     changed since 2026-09-21; by the provider's own unban dates, 14% of its
     entries had expired at that point. It stays until removed manually.
+
+- **2026-10-01**: Protected infrastructure added (`protected.json`, GitHub meta).
+  FireHOL level 3 had blocked `raw.githubusercontent.com` (185.199.109–111.133)
+  and `github.com` (140.82.121.3/.4).
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).

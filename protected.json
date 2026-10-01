@@ -1,0 +1,48 @@
+{
+  "networks": [
+    {
+      "cidr": "185.199.108.0/22",
+      "reason": "GitHub CDN (raw.githubusercontent.com): Skynet downloads filter.list and combined.ipv4 from here"
+    },
+    {
+      "cidr": "140.82.112.0/20",
+      "reason": "GitHub (github.com, api.github.com, git)"
+    },
+    {
+      "cidr": "143.55.64.0/20",
+      "reason": "GitHub (github.com, api.github.com, git)"
+    },
+    {
+      "cidr": "192.30.252.0/22",
+      "reason": "GitHub (github.com, api.github.com, git)"
+    },
+    {
+      "cidr": "1.1.1.1/32",
+      "reason": "Cloudflare public DNS resolver"
+    },
+    {
+      "cidr": "1.0.0.1/32",
+      "reason": "Cloudflare public DNS resolver"
+    },
+    {
+      "cidr": "8.8.8.8/32",
+      "reason": "Google public DNS resolver"
+    },
+    {
+      "cidr": "8.8.4.4/32",
+      "reason": "Google public DNS resolver"
+    },
+    {
+      "cidr": "9.9.9.9/32",
+      "reason": "Quad9 public DNS resolver"
+    },
+    {
+      "cidr": "149.112.112.112/32",
+      "reason": "Quad9 public DNS resolver"
+    }
+  ],
+  "github_meta": {
+    "url": "https://api.github.com/meta",
+    "keys": ["web", "api", "git", "pages"]
+  }
+}

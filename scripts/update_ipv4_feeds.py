@@ -5,6 +5,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 import json
+import os
 from pathlib import Path
 
 from feed_policy import (
@@ -13,7 +14,8 @@ from feed_policy import (
     download, load_feeds, metrics, parse, serialize, shift_consistent, snapshot_body,
     unchanged_limit,
 )
-from feed_analysis import combine, load_allowlist, select_sources, turnover
+from feed_analysis import combine, load_allowlist, protection_effect, select_sources, turnover
+from feed_protection import GITHUB_SNAPSHOT, load_protected, protected_networks, read_github_snapshot, refresh_github
 from feed_freshness import StaleSourceError, fallback_fresh, metadata
 
 
@@ -160,6 +162,7 @@ def render_report(feeds: list[dict], state: dict) -> str:
           f"{state['sources'][f['name']]['pending_shift']['first_seen']}"
           for f in feeds if state['sources'][f['name']].get('pending_shift')
           and state['sources'][f['name']]['status'] == 'stale'],
+        *protection_lines(state.get('protection')),
         *[f"- Accepted level shift: {f['name']} {r['level_shift_accepted']['from']['entries']} -> "
           f"{r['level_shift_accepted']['to']['entries']} entries, first seen {r['level_shift_accepted']['first_seen']}"
           for f in feeds for r in [state['sources'][f['name']]] if r.get('level_shift_accepted')],
@@ -189,6 +192,23 @@ def render_report(feeds: list[dict], state: dict) -> str:
     return "\n".join(lines)
 
 
+def protection_lines(protection):
+    if not protection:  # snapshots from before protection existed
+        return []
+    meta = protection.get('github_meta')
+    github = ('no GitHub meta' if meta is None else
+              f"GitHub meta {meta['status']} ({meta.get('entries', 0)} ranges, last success {meta.get('last_success') or 'never'})")
+    removed = ', '.join(f'{name}: {count}' for name, count in protection['removed_by_source'].items())
+    return [f"- Protected networks: {protection['static_entries']} static + {github}",
+            f"- Removed by protection: {protection['removed_addresses']} addresses" + (f" ({removed})" if removed else '')]
+
+
+def protection_record(config, github, networks, exceptions, protected, sources):
+    return {'static_entries': len(config['networks']), 'github_meta': github,
+            **protection_effect(networks, exceptions, protected,
+                                {name: sources[name]['included'] for name in networks})}
+
+
 def combined_anomaly(previous_public, public):
     if not previous_public or COMBINED_MIN_RATIO * previous_public <= public <= COMBINED_MAX_RATIO * previous_public:
         return None
@@ -202,18 +222,39 @@ def combined_body(networks, records):
     return snapshot_body(networks, {'attribution': attribution})
 
 
+def meta_fetcher(fetch):
+    """Authenticated requests to api.github.com avoid the shared-runner rate limit.
+    The token is only ever sent to api.github.com."""
+    token = os.environ.get('GITHUB_TOKEN')
+    if fetch is not download or not token:
+        return fetch
+    def authenticated(url):
+        headers = {'Authorization': f'Bearer {token}'} if url.startswith('https://api.github.com/') else None
+        return download(url, headers=headers)
+    return authenticated
+
+
 def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, workers: int = 8) -> bool:
     now = now or datetime.now(timezone.utc)
     feeds = load_feeds(root)
     previous = load_state(root)
     exceptions, expired = load_allowlist(root, now)
+    shield = load_protected(root)
+    github, github_body = refresh_github(root, shield['github_meta'],
+                                         previous.get('protection', {}).get('github_meta'), now, meta_fetcher(fetch))
+    if github_body is not None:
+        atomic_write(root / GITHUB_SNAPSHOT, github_body)
+    protected = protected_networks(shield, read_github_snapshot(root, github))
+    if github is not None:
+        print(f"protection github_meta: {github['status']}" + (f" ({github['error']})" if github['error'] else ""))
     with ThreadPoolExecutor(max_workers=workers) as executor:
         results = list(executor.map(
             lambda feed: refresh_one(root, feed, previous["sources"].get(feed["name"], {}), now, fetch), feeds,
         ))
     state = {"checked_at": timestamp(now), "sources": {}}
     networks = {}
-    degraded = False
+    # Stale protection stays in force, but must not go unnoticed.
+    degraded = github is not None and github['status'] != 'ok'
     for name, record, body, active in results:
         state["sources"][name] = record
         if body is not None:
@@ -228,9 +269,9 @@ def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, wo
         print(f"{name}: {record['status']}" + (f" ({record['error']})" if record["error"] else ""))
     state['redundancy'] = select_sources(feeds, state['sources'], networks, previous.get('redundancy', {}), now)
     selected = [ns for name, ns in networks.items() if state['sources'][name]['included']]
-    combined = combine(selected, exceptions)
+    combined = combine(selected, exceptions, protected)
     # A suppressed candidate must never change the actual union, even if state is damaged.
-    if combined != combine(networks.values(), exceptions):
+    if combined != combine(networks.values(), exceptions, protected):
         raise ValueError('Redundancy suppression would lose coverage')
     body = combined_body(combined, state['sources'])
     public = sum(n.num_addresses for n in combined)
@@ -243,6 +284,10 @@ def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, wo
         # stays an expected state for the sources themselves.
         print(f"combined: {state['combined_anomaly']}")
     state['allowlist_active'], state['allowlist_expired'] = exceptions, expired
+    state['protection'] = protection_record(shield, github, networks, exceptions, protected, state['sources'])
+    if state['protection']['removed_addresses']:
+        print(f"protection removed {state['protection']['removed_addresses']} addresses: "
+              f"{state['protection']['removed_by_source']}")
     atomic_write(root / 'generated/combined.ipv4', body)
     atomic_write(root / "filter.list", RAW_PREFIX + 'generated/combined.ipv4\n' if combined else '')
     atomic_write(root / "generated/status.json", json.dumps(state, indent=2) + "\n")

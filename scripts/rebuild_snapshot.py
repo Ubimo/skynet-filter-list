@@ -1,8 +1,11 @@
-"""Rebuild the committed snapshot offline after sources were removed from sources.json.
+"""Rebuild the committed snapshot offline after sources were removed from sources.json
+or protected.json changed.
 
 Uses only the already validated generated/*.ipv4 files: no downloads, checked_at
-unchanged. Removing a source this way keeps the PR check (exact committed
-snapshot) green. New or changed sources still require a normal update run.
+unchanged. Removing a source or adding a protected network this way keeps the PR
+check (exact committed snapshot) green. New or changed sources still require a
+normal update run; a new or changed GitHub meta configuration is recorded as
+`missing` (static protection only) until the next update run fetches it.
 """
 from __future__ import annotations
 
@@ -12,7 +15,8 @@ from pathlib import Path
 
 from feed_policy import ROOT, atomic_write, digest, load_feeds, parse
 from feed_analysis import address_count, combine, intervals, subtract
-from update_ipv4_feeds import combined_body, load_state, render_report
+from update_ipv4_feeds import combined_body, load_state, protection_record, render_report
+from feed_protection import load_protected, protected_networks, read_github_snapshot
 
 
 def rebuild(root: Path = ROOT) -> list[str]:
@@ -59,13 +63,23 @@ def rebuild(root: Path = ROOT) -> list[str]:
         record['included'] = record['included'] and not evidence['suppressed']
 
     exceptions = state['allowlist_active']
-    combined = combine([ns for name, ns in networks.items() if state['sources'][name]['included']], exceptions)
-    if combined != combine(networks.values(), exceptions):
+    shield = load_protected(root)
+    meta = shield['github_meta']
+    github = state.get('protection', {}).get('github_meta')
+    if meta is None:
+        github = None
+    elif not github or github.get('url') != meta['url'] or github.get('keys') != meta['keys']:
+        github = {'url': meta['url'], 'keys': meta['keys'], 'status': 'missing', 'last_success': None,
+                  'checked_at': state['checked_at'], 'error': 'Not fetched yet; static protection only until the next update run'}
+    protected = protected_networks(shield, read_github_snapshot(root, github))
+    combined = combine([ns for name, ns in networks.items() if state['sources'][name]['included']], exceptions, protected)
+    if combined != combine(networks.values(), exceptions, protected):
         raise ValueError('Redundancy suppression would lose coverage')
     body = combined_body(combined, state['sources'])
     state['combined'] = {'entries': len(combined), 'sha256': digest(body),
                          'public_addresses': sum(n.num_addresses for n in combined)}
     state['combined_anomaly'] = None  # a reviewed removal, not an unexplained swing
+    state['protection'] = protection_record(shield, github, networks, exceptions, protected, state['sources'])
     atomic_write(root / 'generated/combined.ipv4', body)
     atomic_write(root / 'generated/status.json', json.dumps(state, indent=2) + '\n')
     atomic_write(root / 'AUDIT.md', render_report(feeds, state))

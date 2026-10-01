@@ -5,10 +5,12 @@ Automatically generated; historical notes are in `AUDIT-HISTORY.md`.
 - Checked at: 2026-09-30T09:38:50+00:00
 - Configured sources: 24
 - Contributing sources: 22
-- Combined IPv4/CIDR entries: 226907
+- Combined IPv4/CIDR entries: 226902
 - Active / expired exceptions: 0 / 0
 - Maximum fallback age: 72 hours
 - Pending level shift: binarydefense 382 -> 1134 entries, first seen 2026-09-30T09:38:50+00:00
+- Protected networks: 10 static + GitHub meta missing (0 ranges, last success never)
+- Removed by protection: 5 addresses (firehol-level3: 5)
 
 Counts are unique IPv4/CIDR entries per source, not unique addresses across sources.
 Last success means successful retrieval and validation, not an upstream observation date.
