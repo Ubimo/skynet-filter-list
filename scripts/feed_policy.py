@@ -19,13 +19,10 @@ MAX_STALE_HOURS = 72
 # Sources without a provider timestamp: content unchanged for longer than this
 # is treated like expired provider data. Overridable per source.
 MAX_UNCHANGED_HOURS = 168
-# Whole-list plausibility: public coverage of the combined file vs. last run.
-COMBINED_MIN_RATIO, COMBINED_MAX_RATIO = 0.5, 2.0
-# Per-source growth beyond 2x is not rejected forever: the new level becomes a
-# pending shift and is accepted once later runs, spanning at least this many
-# hours, observe it again within the tolerance. Drops below 0.5x stay rejected.
-LEVEL_SHIFT_CONFIRM_HOURS = 12
-LEVEL_SHIFT_TOLERANCE = 0.1
+# No size, growth, shrink or turnover limits (owner's decision, 2026-10-01): any
+# change in a source's size is accepted immediately, as long as the file passes
+# the content checks and contains at least one valid IPv4 entry.
+REMOVED_KEYS = ('minimum_entries', 'max_churn_ratio')
 # Conservative special-use policy; exceptions must be exact, reviewed prefixes.
 SPECIAL = tuple(ipaddress.IPv4Network(n) for n in (
     "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8",
@@ -63,13 +60,12 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
         tolerated = feed.get("max_invalid_rows", 0)
         if isinstance(tolerated, bool) or not isinstance(tolerated, int) or not 0 <= tolerated <= 100:
             raise ValueError(f"Invalid max_invalid_rows: {name}")
-        if not isinstance(feed["minimum_entries"], int) or feed["minimum_entries"] < 1:
-            raise ValueError(f"Invalid minimum_entries: {name}")
+        removed = [key for key in REMOVED_KEYS if key in feed]
+        if removed:
+            raise ValueError(f"Size limits were removed; delete {removed} from source: {name}")
         allowed = set(feed.get("allowed_special", []))
         if not allowed.issubset({str(n) for n in SPECIAL}):
             raise ValueError(f"Exception is not an exact special-use prefix: {name}")
-        if not 0 < feed.get('max_churn_ratio', 0.8) <= 1:
-            raise ValueError(f"Invalid churn limit: {name}")
         limit = feed.get('max_unchanged_hours')
         if limit is not None and (isinstance(limit, bool) or not isinstance(limit, (int, float)) or limit <= 0):
             raise ValueError(f"Invalid max_unchanged_hours: {name}")
@@ -166,8 +162,8 @@ def parse(body: str, feed: dict, *, published: bool = False) -> Parsed:
         raise ValueError(f"Unexpected IPv6 entries: {result.ipv6}")
     if result.excluded_special > max(1, len(result.networks) * 0.01):
         raise ValueError(f"Too many special-use entries: {result.excluded_special}")
-    if len(result.networks) < feed["minimum_entries"]:
-        raise ValueError(f"Only {len(result.networks)} IPv4 entries; minimum {feed['minimum_entries']}")
+    if not result.networks:
+        raise ValueError("No valid IPv4 entries")
     return result
 
 
@@ -179,36 +175,6 @@ def metrics(networks: set[ipaddress.IPv4Network], feed: dict) -> dict:
         "entries": len(networks),
         "public_addresses": sum(n.num_addresses for n in ipaddress.collapse_addresses(public)),
     }
-
-
-class LevelShiftError(ValueError):
-    """Growth beyond 2x only (no metric dropped below 0.5x): confirmable."""
-    def __init__(self, message, metrics):
-        super().__init__(message)
-        self.metrics = metrics
-
-
-def check_change(current: dict, previous: dict) -> None:
-    grown, shrunk = [], []
-    for key in ("entries", "public_addresses"):
-        old, new = previous[key], current[key]
-        if old and new < old * 0.5:
-            shrunk.append(f"Anomalous {key}: {old} -> {new} (allowed 0.5x to 2x)")
-        elif old and new > old * 2:
-            grown.append(f"Anomalous {key}: {old} -> {new} (allowed 0.5x to 2x)")
-    if shrunk:
-        raise ValueError("; ".join(shrunk + grown))
-    if grown:
-        raise LevelShiftError("; ".join(grown), dict(current))
-
-
-def shift_consistent(pending: dict | None, current: dict) -> bool:
-    """True if `current` matches a recorded pending shift within the tolerance."""
-    try:
-        return all(abs(current[k] - pending['metrics'][k]) <= pending['metrics'][k] * LEVEL_SHIFT_TOLERANCE
-                   for k in ("entries", "public_addresses"))
-    except (KeyError, TypeError):
-        return False
 
 
 def serialize(networks: set[ipaddress.IPv4Network]) -> str:

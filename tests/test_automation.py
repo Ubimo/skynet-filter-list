@@ -210,14 +210,6 @@ class IntegrationTests(unittest.TestCase):
                 self.assertFalse(self.state()[feed['name']]['included'])
                 self.audit(now)
 
-    def test_churn_keeps_good_snapshot_and_records_reason(self):
-        self.run_update()
-        self.run_update(NOW + timedelta(hours=1), {self.feeds[0]['url']: BODY.replace('8.8.4.', '8.8.5.'),
-                                                  self.feeds[1]['url']: BODY})
-        self.assertEqual(self.state()['one']['status'], 'stale')
-        self.assertIn('turnover', self.state()['one']['error'])
-        self.audit(NOW + timedelta(hours=1))
-
     def test_exception_expires_and_lookup_explains_source(self):
         exception = {'cidr': '8.8.4.1/32', 'reason': 'Temporary test exception',
                      'expires_at': (NOW + timedelta(hours=1)).isoformat()}

@@ -32,6 +32,9 @@ def rebuild(root: Path = ROOT) -> list[str]:
     for name in removed:
         del state['sources'][name]
         state.get('redundancy', {}).pop(name, None)
+    for record in state['sources'].values():
+        for obsolete in ('pending_shift', 'level_shift_accepted'):  # from the removed size limits
+            record.pop(obsolete, None)
     for feed in feeds:
         if state['sources'][feed['name']].get('url') != feed['url']:
             raise ValueError(f"Changed source URL requires a normal update run: {feed['name']}")
@@ -78,7 +81,7 @@ def rebuild(root: Path = ROOT) -> list[str]:
     body = combined_body(combined, state['sources'])
     state['combined'] = {'entries': len(combined), 'sha256': digest(body),
                          'public_addresses': sum(n.num_addresses for n in combined)}
-    state['combined_anomaly'] = None  # a reviewed removal, not an unexplained swing
+    state.pop('combined_anomaly', None)  # from the removed size limits
     state['protection'] = protection_record(shield, github, networks, exceptions, protected, state['sources'])
     atomic_write(root / 'generated/combined.ipv4', body)
     atomic_write(root / 'generated/status.json', json.dumps(state, indent=2) + '\n')

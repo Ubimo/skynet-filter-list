@@ -117,6 +117,6 @@ jobs:
         run: |
           if [ -f AUDIT.md ]; then cat AUDIT.md >> "$GITHUB_STEP_SUMMARY"; fi
           if [ "$REFRESH_OUTCOME" != "success" ]; then
-            echo "One or more feeds or the GitHub meta protection failed, or the combined coverage changed beyond 0.5x-2x. See generated/status.json; healthy feeds were eligible for publication."
+            echo "One or more feeds or the GitHub meta protection failed. See generated/status.json; healthy feeds were eligible for publication."
             exit 1
           fi

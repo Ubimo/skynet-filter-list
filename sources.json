@@ -1,33 +1,27 @@
 [
   {
     "name": "greensnow",
-    "url": "https://blocklist.greensnow.co/greensnow.txt",
-    "minimum_entries": 1106
+    "url": "https://blocklist.greensnow.co/greensnow.txt"
   },
   {
     "name": "binarydefense",
-    "url": "https://www.binarydefense.com/banlist.txt",
-    "minimum_entries": 191,
-    "policy_note": "2026-09-28: reviewed direct HTTPS feed contains 382 valid public IPv4 hosts; floor reset to half that count. Relative count, coverage and turnover guards remain enabled."
+    "url": "https://www.binarydefense.com/banlist.txt"
   },
   {
     "name": "firehol-blocklist-net-ua",
     "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
-    "minimum_entries": 44137,
     "max_unchanged_hours": null,
-    "policy_note": "2026-09-28: re-added at the owner's explicit request WITHOUT any age limit. Upstream (blocklist.net.ua, also its original CSV) has not changed since 2026-09-21 19:30 UTC; per the provider's own UNBAN_DATE, 14.1% of entries had expired at review. No freshness policy and max_unchanged_hours disabled on purpose: the frozen list stays until it is removed manually. Size and turnover guards still apply."
+    "policy_note": "2026-09-28: re-added at the owner's explicit request WITHOUT any age limit. Upstream (blocklist.net.ua, also its original CSV) has not changed since 2026-09-21 19:30 UTC; per the provider's own UNBAN_DATE, 14.1% of entries had expired at review. No freshness policy and max_unchanged_hours disabled on purpose: the frozen list stays until it is removed manually."
   },
   {
     "name": "cins-army",
     "url": "https://cinsscore.com/list/ci-badguys.txt",
-    "minimum_entries": 3750,
     "redundancy_candidate": true,
     "policy_note": "2026-09-28: replaces the FireHOL ciarmy mirror (same CI Army data, ~6h fresher). No provider timestamp; aged by content via max_unchanged_hours."
   },
   {
     "name": "firehol-cybercrime",
     "url": "https://iplists.firehol.org/files/cybercrime.ipset",
-    "minimum_entries": 115,
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
@@ -37,7 +31,6 @@
   {
     "name": "firehol-dshield-1d",
     "url": "https://iplists.firehol.org/files/dshield_1d.netset",
-    "minimum_entries": 6,
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
@@ -47,7 +40,6 @@
   {
     "name": "firehol-et-block",
     "url": "https://iplists.firehol.org/files/et_block.netset",
-    "minimum_entries": 407,
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
@@ -57,7 +49,6 @@
   {
     "name": "firehol-et-compromised",
     "url": "https://iplists.firehol.org/files/et_compromised.ipset",
-    "minimum_entries": 142,
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
@@ -66,7 +57,6 @@
   {
     "name": "firehol-level1",
     "url": "https://iplists.firehol.org/files/firehol_level1.netset",
-    "minimum_entries": 1167,
     "allowed_special": [
       "0.0.0.0/8",
       "10.0.0.0/8",
@@ -90,7 +80,6 @@
   {
     "name": "firehol-level2",
     "url": "https://iplists.firehol.org/files/firehol_level2.netset",
-    "minimum_entries": 4692,
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
@@ -99,7 +88,6 @@
   {
     "name": "firehol-level3",
     "url": "https://iplists.firehol.org/files/firehol_level3.netset",
-    "minimum_entries": 3352,
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
@@ -108,7 +96,6 @@
   {
     "name": "firehol-webserver",
     "url": "https://iplists.firehol.org/files/firehol_webserver.netset",
-    "minimum_entries": 313,
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
@@ -117,7 +104,6 @@
   {
     "name": "firehol-myip",
     "url": "https://iplists.firehol.org/files/myip.ipset",
-    "minimum_entries": 345,
     "freshness": {
       "type": "firehol",
       "max_age_hours": 168
@@ -127,7 +113,6 @@
   {
     "name": "spamhaus-drop",
     "url": "https://www.spamhaus.org/drop/drop_v4.json",
-    "minimum_entries": 401,
     "freshness": {
       "type": "spamhaus_json",
       "max_age_hours": 72
@@ -136,35 +121,29 @@
   },
   {
     "name": "blocklist-de-strongips",
-    "url": "https://lists.blocklist.de/lists/strongips.txt",
-    "minimum_entries": 89
+    "url": "https://lists.blocklist.de/lists/strongips.txt"
   },
   {
     "name": "myip-ms-latest-blacklist",
     "url": "https://myip.ms/files/blacklist/general/latest_blacklist.txt",
-    "minimum_entries": 100,
     "allow_ipv6": true
   },
   {
     "name": "ipsum-level2",
-    "url": "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt",
-    "minimum_entries": 8155
+    "url": "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt"
   },
   {
     "name": "interserver-iprbl",
-    "url": "https://sigs.interserver.net/iprbl.txt",
-    "minimum_entries": 1069
+    "url": "https://sigs.interserver.net/iprbl.txt"
   },
   {
     "name": "blocklist-de-export-ips-all",
     "url": "https://www.blocklist.de/downloads/export-ips_all.txt",
-    "minimum_entries": 1000,
     "allow_ipv6": true
   },
   {
     "name": "abuseipdb-s100-7d",
     "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4",
-    "minimum_entries": 20387,
     "freshness": {
       "type": "iso_comment",
       "max_age_hours": 72
@@ -173,36 +152,31 @@
   {
     "name": "drb-ra-IPC2s-30day",
     "url": "https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv",
-    "minimum_entries": 10,
     "parser": "csv",
     "allow_ipv6": true
   },
   {
     "name": "hagezi-tif",
-    "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt",
-    "minimum_entries": 17125
+    "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt"
   },
   {
     "name": "threatfox-ipport",
     "url": "https://threatfox.abuse.ch/export/csv/ip-port/recent/",
     "parser": "threatfox_csv",
     "min_confidence": 75,
-    "minimum_entries": 565,
     "allow_ipv6": true,
     "freshness": {
       "type": "iso_comment",
       "max_age_hours": 72
     },
-    "max_churn_ratio": 0.95,
-    "policy_note": "2026-09-28: abuse.ch ThreatFox recent ip:port IOCs (botnet C2), confidence >= 75: 2,271 IPv4 hosts at review. Rolling export window, so churn limit raised to 0.95; count and coverage limits stay 0.5x-2x. Floor = 25% of reviewed count."
+    "policy_note": "2026-09-28: abuse.ch ThreatFox recent ip:port IOCs (botnet C2), confidence >= 75: 2,271 IPv4 hosts at review."
   },
   {
     "name": "threatview-high-confidence",
     "url": "https://threatview.io/Downloads/IP-High-Confidence-Feed.txt",
-    "minimum_entries": 5100,
     "max_invalid_rows": 10,
     "redundancy_candidate": true,
-    "policy_note": "2026-09-28: 19,939 valid public IPv4 hosts at review (plus 558 IPv6, dropped via allow_ipv6); upstream contains a few malformed rows (leading-zero octets), up to 10 are dropped. No provider timestamp; aged by content. Floor = ~25% of reviewed IPv4 count.",
+    "policy_note": "2026-09-28: 19,939 valid public IPv4 hosts at review (plus 558 IPv6, dropped via allow_ipv6); upstream contains a few malformed rows (leading-zero octets), up to 10 are dropped. No provider timestamp; aged by content.",
     "allow_ipv6": true
   }
 ]

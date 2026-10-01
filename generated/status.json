@@ -51,14 +51,7 @@
       "attribution": [],
       "content_changed_at": "2026-09-28T09:54:24+00:00",
       "sha256": "5e07b19cb689396af83fe26b8921aec192da3abf17a523ff517eb51eccccab84",
-      "included": true,
-      "pending_shift": {
-        "first_seen": "2026-10-01T09:58:56+00:00",
-        "metrics": {
-          "entries": 1514,
-          "public_addresses": 1514
-        }
-      }
+      "included": true
     },
     "firehol-blocklist-net-ua": {
       "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
@@ -726,7 +719,6 @@
     "sha256": "93dc0b268f0e86ba17482621d008d29ef756b04f98c9cb6e2bb8f3a687973323",
     "public_addresses": 18479957
   },
-  "combined_anomaly": null,
   "allowlist_active": [],
   "allowlist_expired": [],
   "protection": {
