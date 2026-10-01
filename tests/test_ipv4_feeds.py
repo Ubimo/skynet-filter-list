@@ -14,12 +14,12 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from feed_policy import check_change, download, load_feeds, metrics, parse, serialize
+from feed_policy import download, load_feeds, metrics, parse, serialize
 from update_ipv4_feeds import update
 from audit_sources import validate
 from rebuild_snapshot import rebuild
 
-FEED = {'name': 'one', 'url': 'https://example.com/one', 'minimum_entries': 1}
+FEED = {'name': 'one', 'url': 'https://example.com/one'}
 NOW = datetime(2026, 9, 10, tzinfo=timezone.utc)
 BODY = '8.8.4.1\n8.8.4.2\n8.8.4.3\n8.8.4.4\n'
 
@@ -70,19 +70,11 @@ class PolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse('0.0.0.0/0', feed)
 
-    def test_cidr_coverage_changes_are_detected_with_same_entry_count(self):
-        old = metrics(parse('8.8.8.8', FEED).networks, FEED)
-        new = metrics(parse('8.8.8.0/24', FEED).networks, FEED)
-        with self.assertRaisesRegex(ValueError, 'public_addresses'):
-            check_change(new, old)
-
-    def test_count_drop_and_growth_and_boundaries(self):
-        old = {'entries': 100, 'public_addresses': 100}
-        for count in (49, 201):
-            with self.assertRaises(ValueError):
-                check_change({'entries': count, 'public_addresses': 100}, old)
-        for count in (50, 100, 200):
-            check_change({'entries': count, 'public_addresses': count}, old)
+    def test_single_entry_is_enough_and_empty_is_rejected(self):
+        self.assertEqual(serialize(parse('8.8.8.8', FEED).networks), '8.8.8.8\n')
+        for body in ('', '# only a comment\n', '2001:db8::1\n'):
+            with self.subTest(body=body), self.assertRaisesRegex(ValueError, 'No valid IPv4'):
+                parse(body, dict(FEED, allow_ipv6=True))
 
     def test_coverage_is_unique_and_excludes_intentional_bogons(self):
         feed = dict(FEED, allowed_special=['127.0.0.0/8'])
@@ -168,73 +160,32 @@ class UpdateTests(unittest.TestCase):
         self.assertTrue(self.state()['one']['included'])
         self.audit(NOW + timedelta(hours=74))
 
-    def test_anomaly_remains_rejected_on_retries(self):
+    def test_any_size_change_or_replacement_is_accepted_immediately(self):
+        # Owner's decision 2026-10-01: no growth, shrink or turnover limits.
         self.run_update()
-        bodies = {self.feeds[0]['url']: '8.8.4.1\n', self.feeds[1]['url']: BODY}
-        for hours in (1, 25, 74, 100):
-            self.assertTrue(self.run_update(NOW + timedelta(hours=hours), bodies))
-            self.assertEqual(self.state()['one']['metrics']['entries'], 4)
-            self.assertIn('Anomalous', self.state()['one']['error'])
-            self.audit(NOW + timedelta(hours=hours))
-
-    def grown(self, count=9, first=1):
-        return ''.join(f'8.8.5.{i}\n' for i in range(first, first + count)) + BODY
-
-    def test_growth_beyond_2x_is_accepted_after_confirmation(self):
-        # Regression for binarydefense 382 -> 766: a persistent, genuine growth
-        # must not stay rejected until the fallback expires.
-        self.run_update()
-        bodies = {self.feeds[0]['url']: self.grown(), self.feeds[1]['url']: BODY}
-        self.assertFalse(self.run_update(NOW + timedelta(hours=1), bodies))
-        record = self.state()['one']
-        self.assertEqual((record['status'], record['metrics']['entries']), ('stale', 4))
-        self.assertEqual(record['pending_shift']['metrics']['entries'], 13)
-        self.assertIn('Pending level shift: one 4 -> 13', (self.root / 'AUDIT.md').read_text())
-        self.audit(NOW + timedelta(hours=1))
-        # Seen again, but not yet 12h after first observation: still pending.
-        self.assertFalse(self.run_update(NOW + timedelta(hours=12), bodies))
-        self.assertEqual(self.state()['one']['status'], 'stale')
-        self.assertFalse(self.run_update(NOW + timedelta(hours=13), bodies))
-        record = self.state()['one']
-        self.assertEqual((record['status'], record['metrics']['entries']), ('ok', 13))
-        self.assertNotIn('pending_shift', record)
-        self.assertEqual(record['level_shift_accepted']['first_seen'],
-                         (NOW + timedelta(hours=1)).isoformat(timespec='seconds'))
-        self.audit(NOW + timedelta(hours=13))
-        self.assertFalse(self.run_update(NOW + timedelta(hours=37), bodies))
-        self.assertNotIn('level_shift_accepted', self.state()['one'])
-
-    def test_moving_growth_restarts_confirmation(self):
-        self.run_update()
-        for hours, count in ((1, 9), (14, 12), (25, 12)):
-            self.run_update(NOW + timedelta(hours=hours),
-                            {self.feeds[0]['url']: self.grown(count), self.feeds[1]['url']: BODY})
-        self.assertEqual(self.state()['one']['status'], 'stale')
-        self.assertEqual(self.state()['one']['pending_shift']['first_seen'],
-                         (NOW + timedelta(hours=14)).isoformat(timespec='seconds'))
-        self.run_update(NOW + timedelta(hours=27),
-                        {self.feeds[0]["url"]: self.grown(12), self.feeds[1]["url"]: BODY})
-        self.assertEqual(self.state()["one"]["metrics"]["entries"], 16)
-
-    def test_unconfirmed_growth_expires_and_fails_run(self):
-        self.run_update()
-        bodies = {self.feeds[0]['url']: self.grown(), self.feeds[1]['url']: BODY}
-        self.run_update(NOW + timedelta(hours=1), bodies)
-        # Upstream flips back and forth: never confirmed, fallback age still limited.
-        self.run_update(NOW + timedelta(hours=20), {self.feeds[0]['url']: ValueError('x'), self.feeds[1]['url']: BODY})
-        self.assertNotIn('pending_shift', self.state()['one'])
-        self.assertTrue(self.run_update(NOW + timedelta(hours=73), bodies))
-        self.assertEqual(self.state()['one']['status'], 'disabled')
-        self.audit(NOW + timedelta(hours=73))
-
-    def test_growth_confirmation_keeps_churn_guard(self):
-        self.run_update()
+        grown = ''.join(f'8.8.5.{i}\n' for i in range(1, 200)) + BODY
         replaced = ''.join(f'9.9.9.{i}\n' for i in range(1, 14))
-        bodies = {self.feeds[0]['url']: replaced, self.feeds[1]['url']: BODY}
-        self.run_update(NOW + timedelta(hours=1), bodies)
-        self.assertTrue(self.run_update(NOW + timedelta(hours=14), bodies))
-        self.assertIn('turnover', self.state()['one']['error'])
-        self.assertEqual(self.state()['one']['metrics']['entries'], 4)
+        for hours, body, entries in ((1, '8.8.4.1\n', 1), (2, grown, 203), (3, replaced, 13), (4, '9.9.0.0/16\n', 1)):
+            with self.subTest(entries=entries):
+                now = NOW + timedelta(hours=hours)
+                self.assertFalse(self.run_update(now, {self.feeds[0]['url']: body, self.feeds[1]['url']: BODY}))
+                record = self.state()['one']
+                self.assertEqual((record['status'], record['metrics']['entries'], record['error']), ('ok', entries, None))
+                self.assertIsNotNone(record['turnover'])
+                self.audit(now)
+        state = json.loads((self.root / 'generated/status.json').read_text())
+        self.assertNotIn('combined_anomaly', state)
+        self.assertEqual(json.loads((self.root / '.update-result.json').read_text()), {'degraded': False})
+
+    def test_leftover_pending_shift_is_dropped(self):
+        self.run_update()
+        path = self.root / 'generated/status.json'
+        state = json.loads(path.read_text())
+        state['sources']['one']['pending_shift'] = {'first_seen': NOW.isoformat(), 'metrics': {}}
+        path.write_text(json.dumps(state))
+        self.run_update(NOW + timedelta(hours=1), {self.feeds[0]['url']: OSError('down'), self.feeds[1]['url']: BODY})
+        self.assertNotIn('pending_shift', self.state()['one'])
+        self.audit(NOW + timedelta(hours=1))
 
     def test_failed_first_download_has_no_unverified_fallback(self):
         bodies = {self.feeds[0]['url']: OSError('down'), self.feeds[1]['url']: BODY}
@@ -381,7 +332,7 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(self.state()['two']['status'], 'stale')
         self.assertEqual(self.state()['one']['status'], 'ok')
 
-    def test_removed_source_and_large_combined_change_are_published_but_flagged(self):
+    def test_removed_source_and_large_combined_change_are_published(self):
         one, two = (f['url'] for f in self.feeds)
         self.assertFalse(self.run_update(bodies={one: BODY, two: '9.9.9.1\n9.9.9.2\n9.9.9.3\n9.9.9.4\n9.9.9.5\n'}))
         self.feeds = self.feeds[:1]
@@ -390,14 +341,7 @@ class UpdateTests(unittest.TestCase):
         state = json.loads((self.root / 'generated/status.json').read_text())
         self.assertEqual(set(state['sources']), {'one'})
         self.assertEqual(state['combined']['public_addresses'], 4)
-        self.assertIn('9 -> 4', state['combined_anomaly'])
-        self.assertIn('9 -> 4', json.loads((self.root / '.update-result.json').read_text())['combined_anomaly'])
-        self.assertIn('Combined coverage anomaly', (self.root / 'AUDIT.md').read_text())
         self.audit(NOW + timedelta(hours=1))
-        # Alarm fires once; the new coverage becomes the next baseline.
-        self.assertFalse(self.run_update(NOW + timedelta(hours=2), {one: BODY}))
-        self.assertIsNone(json.loads((self.root / 'generated/status.json').read_text())['combined_anomaly'])
-        self.audit(NOW + timedelta(hours=2))
 
     def test_offline_rebuild_after_removing_source_passes_exact_audit(self):
         one, two = (f['url'] for f in self.feeds)
@@ -481,7 +425,7 @@ class ParserExtensionTests(unittest.TestCase):
     def test_new_options_are_validated(self):
         root = Path(tempfile.mkdtemp())
         self.addCleanup(lambda: __import__('shutil').rmtree(root))
-        for option in ({'min_confidence': 101}, {'min_confidence': True}, {'max_invalid_rows': -1},
+        for option in ({'minimum_entries': 1}, {'max_churn_ratio': 0.9}, {'min_confidence': 101}, {'min_confidence': True}, {'max_invalid_rows': -1},
                        {'max_invalid_rows': 101}, {'max_invalid_rows': '3'}, {'parser': 'unknown'}):
             (root / 'sources.json').write_text(json.dumps([dict(FEED, **option)]))
             with self.subTest(option=option), self.assertRaises(ValueError):

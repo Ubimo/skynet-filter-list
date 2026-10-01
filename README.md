@@ -2,7 +2,7 @@
 
 A curated, validated IPv4 blocklist for [Skynet](https://github.com/Adamm00/IPSet_ASUS)
 on Asuswrt-Merlin routers. GitHub Actions fetches the upstream feeds daily, checks
-each one for integrity, freshness and anomalies, merges them into a single
+each one for integrity and freshness, merges them into a single
 deduplicated list and publishes it only after an exact audit.
 
 Current counts, provider dates and source states: [AUDIT.md](AUDIT.md).
@@ -89,7 +89,7 @@ republishing in a public repository.
 Every source must pass all checks before its data is accepted:
 
 - **Integrity**: HTTPS only (no downgrade), at most 64 MiB, strict UTF-8, no
-  invalid rows, at least `minimum_entries` entries. A reviewed source may drop up
+  invalid rows, at least one valid IPv4 entry. A reviewed source may drop up
   to `max_invalid_rows` malformed upstream rows (at most 100; counted as
   `excluded_invalid`); published snapshots never contain any.
 - **Formats**: plain lists (first field), CSV, Spamhaus JSON, and ThreatFox CSV
@@ -99,13 +99,9 @@ Every source must pass all checks before its data is accepted:
   are removed; more than 1% of them (one is tolerated) rejects the file. FireHOL
   level 1 may keep its reviewed fullbogon prefixes (`allowed_special`) in its own
   snapshot only.
-- **Size**: entry count and public-address coverage must stay within 0.5x to 2x of
-  the last accepted snapshot. A drop below 0.5x stays rejected. Growth beyond 2x
-  becomes a *pending level shift*: the last good snapshot keeps being used, and the
-  new level is accepted automatically once runs at least 12 hours apart see it again
-  within ±10% (all other checks, including turnover, still apply).
-- **Turnover**: at most 80% of the addresses may be replaced at once, even with an
-  unchanged count (`max_churn_ratio` per source, after review).
+- **No size limits**: growth, shrinkage and turnover are accepted immediately, for
+  every source and for the combined list (owner's decision, 2026-10-01). Turnover is
+  still recorded in `status.json` for information.
 - **Freshness by provider timestamp**: FireHOL `Source File Date` (not the mirror's
   processing date), Spamhaus JSON metadata, or a `# Last updated:` comment. Missing
   or future timestamps are rejected. Re-downloading an old file never makes it newer.
@@ -114,11 +110,6 @@ Every source must pass all checks before its data is accepted:
   (`max_unchanged_hours` per source) counts as expired. `"max_unchanged_hours":
   null` is an explicit, reviewed opt-out for a source kept on purpose although it
   no longer changes.
-
-The combined list has its own plausibility check: if its public coverage changes
-beyond 0.5x to 2x of the previous run, it is still published (every source passed
-its own checks), but `combined_anomaly` is recorded in `status.json` and
-`AUDIT.md`, and the run fails once so the change gets reviewed.
 
 These checks guard against broken, stale or manipulated feeds. They do not prove
 that every listed address is malicious.
@@ -133,9 +124,7 @@ that every listed address is malicious.
 | `quarantined` | known stale-data condition for sources with `quarantine_on_stale`; checked every run, returns automatically | no |
 
 `stale` and `disabled` fail the workflow, but only after all healthy updates have
-been published. `quarantined` is expected and does not fail it, and neither does a
-`stale` source whose only problem is a pending level shift still inside its fallback
-window. An anomalous drop or replacement is not accepted just because it is retried.
+been published. `quarantined` is expected and does not fail it.
 
 ## Redundancy suppression
 
@@ -235,8 +224,8 @@ Dependabot proposes action updates weekly. No third-party Python packages are
 used.
 
 Updater exit codes: `0` success (an expected quarantine is fine), `2` completed
-with stale or disabled sources, failed GitHub meta protection or a combined
-anomaly, anything else aborted.
+with stale or disabled sources or failed GitHub meta protection, anything else
+aborted.
 
 If Actions stops entirely, nothing here can expire data already loaded on a
 router; the router keeps its last downloaded list.
@@ -244,9 +233,8 @@ router; the router keeps its last downloaded list.
 ## Maintenance
 
 **Add a source**: add an entry to `sources.json` (unique `name` and `https://`
-URL, `minimum_entries`, optional `freshness`, `parser`, `max_unchanged_hours`,
-`max_churn_ratio`, `max_invalid_rows`, `min_confidence`, `allow_ipv6`,
-`redundancy_candidate`) and open a PR. The first refresh after merging fetches it.
+URL, optional `freshness`, `parser`, `max_unchanged_hours`, `max_invalid_rows`,
+`min_confidence`, `allow_ipv6`, `redundancy_candidate`) and open a PR. The first refresh after merging fetches it.
 
 **Remove a source**: delete it from `sources.json` and rebuild the snapshot
 offline in the same PR:
@@ -261,10 +249,9 @@ The rebuild uses only the committed, already validated snapshots, removes the
 source's record and file, and recomputes the combined list and redundancy
 evidence.
 
-**Accept a reviewed large change** of one source (beyond the size or turnover
-limits): remove only that source's record from `generated/status.json`, run the
-updater, audit and review the diff. A changed source URL also requires this
-baseline reset. Corrupt snapshot files can be restored from Git history.
+**Change a source URL**: remove only that source's record from
+`generated/status.json`, run the updater, audit and review the diff. Corrupt
+snapshot files can be restored from Git history.
 
 **Run locally** (one updater per checkout at a time):
 
@@ -325,6 +312,11 @@ produced by the scripts and verified byte for byte.
 - **2026-10-01**: Protected infrastructure added (`protected.json`, GitHub meta).
   FireHOL level 3 had blocked `raw.githubusercontent.com` (185.199.109–111.133)
   and `github.com` (140.82.121.3/.4).
+
+- **2026-10-01**: All size limits removed at the owner's request: no 0.5x–2x
+  check per source or for the combined list, no turnover limit, no
+  `minimum_entries` (one valid entry suffices). Content, scope, freshness and
+  special-use checks are unchanged.
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).

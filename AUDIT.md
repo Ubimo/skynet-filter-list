@@ -8,7 +8,6 @@ Automatically generated; historical notes are in `AUDIT-HISTORY.md`.
 - Combined IPv4/CIDR entries: 228381
 - Active / expired exceptions: 0 / 0
 - Maximum fallback age: 72 hours
-- Pending level shift: binarydefense 382 -> 1514 entries, first seen 2026-10-01T09:58:56+00:00
 - Protected networks: 10 static + GitHub meta ok (65 ranges, last success 2026-10-01T10:04:32+00:00)
 - Removed by protection: 5 addresses (firehol-level3: 5)
 
