@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from feed_policy import ROOT, load_feeds
 from feed_analysis import load_allowlist
+from feed_protection import load_protected, read_github_snapshot
 
 
 def lookup(address: str, root: Path = ROOT) -> dict:
@@ -30,10 +31,15 @@ def lookup(address: str, root: Path = ROOT) -> dict:
             sources.append({'source': feed['name'], 'url': feed['url'], 'networks': matches,
                             'contributing': record['included'], 'status': record['status']})
     exceptions, _ = load_allowlist(root, datetime.fromisoformat(state['checked_at']))
+    shield = load_protected(root)
+    github = read_github_snapshot(root, state.get('protection', {}).get('github_meta')) or set()
+    protected = [{'cidr': str(n), 'origin': 'protected.json'} for n in shield['networks'] if ip in n]
+    protected += [{'cidr': str(n), 'origin': 'GitHub meta'} for n in sorted(github) if ip in n]
     return {'address': str(ip), 'snapshot_at': state['checked_at'],
             'blocked_in_published_snapshot': bool(matching(root / 'generated/combined.ipv4')),
             'sources': sources,
-            'exceptions_at_publication': [item for item in exceptions if ip in ipaddress.ip_network(item['cidr'])]}
+            'exceptions_at_publication': [item for item in exceptions if ip in ipaddress.ip_network(item['cidr'])],
+            'protected': protected}
 
 
 def main():

@@ -51,7 +51,7 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
     names, urls = set(), set()
     for feed in feeds:
         name, url = feed["name"], feed["url"]
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", name) or name == 'combined':
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", name) or name in ('combined', 'protected-github'):
             raise ValueError(f"Invalid source name: {name}")
         if name in names or url in urls or not url.startswith("https://"):
             raise ValueError(f"Duplicate name/URL or non-HTTPS source: {name}")
@@ -90,10 +90,10 @@ def unchanged_limit(feed: dict):
     return feed.get('max_unchanged_hours', None if feed.get('freshness') else MAX_UNCHANGED_HOURS)
 
 
-def download(url: str, timeout: float = 30, retries: int = 1) -> str:
+def download(url: str, timeout: float = 30, retries: int = 1, headers: dict | None = None) -> str:
     for attempt in range(retries + 1):
         try:
-            request = urllib.request.Request(url, headers={"User-Agent": "skynet-filter-list/3.0"})
+            request = urllib.request.Request(url, headers={"User-Agent": "skynet-filter-list/3.0", **(headers or {})})
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 if not response.url.startswith("https://"):
                     raise ValueError("Refusing HTTPS downgrade")

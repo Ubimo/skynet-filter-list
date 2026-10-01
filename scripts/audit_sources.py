@@ -4,13 +4,15 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
+import ipaddress
 import json
 from pathlib import Path
 import re
 
 from feed_policy import ROOT, RAW_PREFIX, MAX_STALE_HOURS, digest, download, load_feeds, metrics, parse, snapshot_body
-from update_ipv4_feeds import combined_body, render_report
-from feed_analysis import combine, load_allowlist, overlaps_special
+from update_ipv4_feeds import combined_body, protection_record, render_report
+from feed_analysis import combine, load_allowlist, overlaps, overlaps_special
+from feed_protection import load_protected, protected_networks, read_github_snapshot
 from feed_freshness import fallback_fresh
 
 
@@ -79,13 +81,35 @@ def validate(root: Path = ROOT, *, now: datetime | None = None, read=None, allow
         raise ValueError('Exception state differs from allowlist.json')
     if load_allowlist(root, now, read=read)[0] != exceptions:
         raise ValueError('Exception expired between generation and publication; regenerate')
-    combined = combine(networks.values(), exceptions)
-    selected = combine([ns for name, ns in networks.items() if state['sources'][name]['included']], exceptions)
+    shield = load_protected(root, read=read)
+    protection = state.get('protection')
+    if protection is None:
+        # Snapshots from before protection existed: valid only while nothing is configured.
+        if shield['networks'] or shield['github_meta']:
+            raise ValueError('Protection is configured but the snapshot does not record it; regenerate')
+        github = None
+    else:
+        github = protection.get('github_meta')
+        meta = shield['github_meta']
+        if (github is None) != (meta is None) or (meta and (github['url'] != meta['url'] or github['keys'] != meta['keys'])):
+            raise ValueError('GitHub protection state differs from protected.json')
+        if github and (github['status'] not in ('ok', 'stale', 'missing') or github['checked_at'] != state['checked_at']
+                       or (github['status'] == 'ok') == bool(github.get('error'))):
+            raise ValueError('Invalid GitHub protection state')
+    protected = protected_networks(shield, read_github_snapshot(root, github, read=read))
+    combined = combine(networks.values(), exceptions, protected)
+    selected = combine([ns for name, ns in networks.items() if state['sources'][name]['included']], exceptions, protected)
     if combined != selected:
         raise ValueError('Suppression loses coverage')
     body = read('generated/combined.ipv4')
     if overlaps_special(combined):
         raise ValueError('Combined coverage contains special-use space')
+    published = {ipaddress.ip_network(line) for line in body.splitlines() if line and not line.startswith('#')}
+    if overlaps(published, protected):
+        raise ValueError('Combined file contains protected infrastructure (protected.json / GitHub meta)')
+    if protection is not None and protection != protection_record(shield, github, networks, exceptions, protected,
+                                                                  state['sources']):
+        raise ValueError('Protection accounting differs from validated sources')
     if not combined or body != combined_body(combined, state['sources']):
         raise ValueError('Combined file does not exactly equal validated sources minus exceptions')
     expected = {'entries': len(combined), 'sha256': digest(body)}

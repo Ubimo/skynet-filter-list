@@ -722,11 +722,31 @@
     }
   },
   "combined": {
-    "entries": 226907,
-    "sha256": "a1614fffe5d2dda3a7f2933c8e630625fc67d78f3b3ad3f407e07925710a8ef0",
-    "public_addresses": 18482051
+    "entries": 226902,
+    "sha256": "ad979ad84113c2edb83ede8960b8ecd2394dfba39578987735c90aad02980366",
+    "public_addresses": 18482046
   },
   "combined_anomaly": null,
   "allowlist_active": [],
-  "allowlist_expired": []
+  "allowlist_expired": [],
+  "protection": {
+    "static_entries": 10,
+    "github_meta": {
+      "url": "https://api.github.com/meta",
+      "keys": [
+        "web",
+        "api",
+        "git",
+        "pages"
+      ],
+      "status": "missing",
+      "last_success": null,
+      "checked_at": "2026-09-30T09:38:50+00:00",
+      "error": "Not fetched yet; static protection only until the next update run"
+    },
+    "removed_addresses": 5,
+    "removed_by_source": {
+      "firehol-level3": 5
+    }
+  }
 }

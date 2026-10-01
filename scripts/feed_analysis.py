@@ -82,13 +82,36 @@ def load_allowlist(root: Path, now: datetime, read=None):
     return active, expired
 
 
-def combine(network_sets, exceptions):
+def combine(network_sets, exceptions, protected=()):
     """Published union: never contains special-use space, even if a source may
     (e.g. FireHOL level1 fullbogons via allowed_special). Routers would otherwise
-    receive RFC1918, CGNAT, loopback or multicast ranges as block rules."""
+    receive RFC1918, CGNAT, loopback or multicast ranges as block rules.
+    Protected infrastructure (protected.json, GitHub meta) is removed as well."""
     union = intervals(n for networks in network_sets for n in networks)
-    excluded = intervals([*(ipaddress.ip_network(item['cidr']) for item in exceptions), *SPECIAL])
+    excluded = intervals([*(ipaddress.ip_network(item['cidr']) for item in exceptions), *SPECIAL, *protected])
     return to_networks(subtract(union, excluded))
+
+
+def protection_effect(networks, exceptions, protected, included):
+    """Addresses that protection removes from the union, overall and per source.
+    Only addresses that would otherwise be published count (after exceptions and
+    special-use removal), so the numbers explain the published difference."""
+    base_excluded = intervals([*(ipaddress.ip_network(item['cidr']) for item in exceptions), *SPECIAL])
+    shield = intervals(protected)
+
+    def removed(nets):
+        base = subtract(intervals(nets), base_excluded)
+        return address_count(base) - address_count(subtract(base, shield))
+
+    union = [n for name, nets in networks.items() if included[name] for n in nets]
+    per_source = {name: count for name, nets in sorted(networks.items())
+                  if (count := removed(nets))}
+    return {'removed_addresses': removed(union), 'removed_by_source': per_source}
+
+
+def overlaps(networks, protected) -> bool:
+    ranges = intervals(networks)
+    return subtract(ranges, intervals(protected)) != ranges
 
 
 def overlaps_special(networks) -> bool:
