@@ -11,7 +11,7 @@
     "name": "firehol-blocklist-net-ua",
     "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
     "max_unchanged_hours": null,
-    "policy_note": "2026-09-28: re-added at the owner's explicit request WITHOUT any age limit. Upstream (blocklist.net.ua, also its original CSV) has not changed since 2026-09-21 19:30 UTC; per the provider's own UNBAN_DATE, 14.1% of entries had expired at review. No freshness policy and max_unchanged_hours disabled on purpose: the frozen list stays until it is removed manually."
+    "policy_note": "2026-09-28: re-added at the owner's explicit request WITHOUT any age limit. Upstream (blocklist.net.ua, also its original CSV) has not changed since 2026-09-21 19:30 UTC; per the provider's own UNBAN_DATE, 14.1% of entries had expired at review. No freshness policy and max_unchanged_hours disabled on purpose: the list stays until it is removed manually. 2026-10-16: upstream is no longer frozen; content has changed daily since early October 2026 (about 3% turnover per day)."
   },
   {
     "name": "cins-army",
