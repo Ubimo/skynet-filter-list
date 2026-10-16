@@ -150,6 +150,15 @@
     }
   },
   {
+    "name": "abuseipdb-s100-30d",
+    "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-30d.ipv4",
+    "freshness": {
+      "type": "iso_comment",
+      "max_age_hours": 72
+    },
+    "policy_note": "2026-10-16: added at the owner's request alongside the 7-day list. AbuseIPDB score 100 over 30 days: 127,605 IPv4 hosts at review, about 49,000 addresses not covered by the other sources."
+  },
+  {
     "name": "drb-ra-IPC2s-30day",
     "url": "https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv",
     "parser": "csv",
