@@ -142,14 +142,6 @@
     "allow_ipv6": true
   },
   {
-    "name": "abuseipdb-s100-7d",
-    "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4",
-    "freshness": {
-      "type": "iso_comment",
-      "max_age_hours": 72
-    }
-  },
-  {
     "name": "abuseipdb-s100-30d",
     "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-30d.ipv4",
     "freshness": {

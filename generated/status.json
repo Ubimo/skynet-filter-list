@@ -500,32 +500,6 @@
       "sha256": "b9a392ef17eb4e9532c601f013c026d248027582542407e529505ca88324c68c",
       "included": true
     },
-    "abuseipdb-s100-7d": {
-      "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4",
-      "status": "ok",
-      "last_success": "2026-10-16T08:27:31+00:00",
-      "checked_at": "2026-10-16T08:27:31+00:00",
-      "metrics": {
-        "entries": 75925,
-        "public_addresses": 75925
-      },
-      "excluded_ipv6": 0,
-      "excluded_special": 0,
-      "excluded_invalid": 0,
-      "error": null,
-      "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
-      },
-      "upstream_updated_at": "2026-10-16T08:13:57+00:00",
-      "upstream_deadline": "2026-10-19T08:13:57+00:00",
-      "attribution": [],
-      "content_changed_at": "2026-10-16T08:19:39+00:00",
-      "sha256": "005dc78963fa1fb91b85488994427a0fe6b072a370b44c80a078dbf7a7c85bdb",
-      "included": true
-    },
     "abuseipdb-s100-30d": {
       "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-30d.ipv4",
       "status": "ok",
