@@ -63,7 +63,7 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 | `firehol-et-block` | Emerging Threats block (FireHOL) | provider timestamp, 168 h |
 | `firehol-dshield-1d` | DShield top blocks, 1 day (FireHOL) | provider timestamp, 168 h |
 | `firehol-myip` | myip.ms (FireHOL) | provider timestamp, 168 h |
-| `firehol-blocklist-net-ua` | blocklist.net.ua (FireHOL); upstream frozen since 2026-09-21 | **none** (explicitly disabled) |
+| `firehol-blocklist-net-ua` | blocklist.net.ua (FireHOL); updated daily again since early October 2026 | **none** (explicitly disabled) |
 | `cins-army` | CINS Army | content, 168 h |
 | `ipsum-level2` | IPsum level 2 | content, 168 h |
 | `blocklist-de-export-ips-all` | blocklist.de all | content, 168 h |
@@ -318,6 +318,13 @@ produced by the scripts and verified byte for byte.
   check per source or for the combined list, no turnover limit, no
   `minimum_entries` (one valid entry suffices). Content, scope, freshness and
   special-use checks are unchanged.
+
+- **2026-10-16**:
+  - `abuseipdb-s100-30d` added alongside the 7-day list (127,605 IPv4 hosts at
+    review, about 49,000 addresses not covered by the other sources).
+  - `firehol-blocklist-net-ua` is no longer frozen: its content has changed
+    daily since early October (208,483 entries on 2026-10-02, 229,052 on
+    2026-10-16, about 3% turnover per day). It still has no age limit.
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).
