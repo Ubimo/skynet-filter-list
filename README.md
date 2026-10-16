@@ -52,7 +52,6 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 | Source | Feed | Age check |
 |---|---|---|
 | `spamhaus-drop` | Spamhaus DROP (JSON) | provider timestamp, 72 h |
-| `abuseipdb-s100-7d` | AbuseIPDB score 100, 7 days (borestad) | provider timestamp, 72 h |
 | `abuseipdb-s100-30d` | AbuseIPDB score 100, 30 days (borestad) | provider timestamp, 72 h |
 | `firehol-level1` | FireHOL level 1 | provider timestamp, 168 h |
 | `firehol-level2` | FireHOL level 2 | provider timestamp, 168 h |
@@ -325,6 +324,8 @@ produced by the scripts and verified byte for byte.
   - `firehol-blocklist-net-ua` is no longer frozen: its content has changed
     daily since early October (208,483 entries on 2026-10-02, 229,052 on
     2026-10-16, about 3% turnover per day). It still has no age limit.
+  - `abuseipdb-s100-7d` removed: every one of its 75,925 entries was also in
+    `abuseipdb-s100-30d`, so it added no coverage.
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).

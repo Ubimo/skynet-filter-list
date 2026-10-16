@@ -3,8 +3,8 @@
 Automatically generated; historical notes are in `AUDIT-HISTORY.md`.
 
 - Checked at: 2026-10-16T08:27:31+00:00
-- Configured sources: 25
-- Contributing sources: 23
+- Configured sources: 24
+- Contributing sources: 22
 - Combined IPv4/CIDR entries: 279994
 - Active / expired exceptions: 0 / 0
 - Maximum fallback age: 72 hours
@@ -35,7 +35,6 @@ Last success means successful retrieval and validation, not an upstream observat
 | [ipsum-level2](https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt) | ok | True | 33971 | unknown | 2026-10-16T08:27:31+00:00 |
 | [interserver-iprbl](https://sigs.interserver.net/iprbl.txt) | ok | True | 5107 | unknown | 2026-10-16T08:27:31+00:00 |
 | [blocklist-de-export-ips-all](https://www.blocklist.de/downloads/export-ips_all.txt) | ok | True | 25190 | unknown | 2026-10-16T08:27:31+00:00 |
-| [abuseipdb-s100-7d](https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-7d.ipv4) | ok | True | 75925 | 2026-10-16T08:13:57+00:00 | 2026-10-16T08:27:31+00:00 |
 | [abuseipdb-s100-30d](https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-30d.ipv4) | ok | True | 127834 | 2026-10-16T08:13:58+00:00 | 2026-10-16T08:27:31+00:00 |
 | [drb-ra-IPC2s-30day](https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv) | ok | True | 232 | unknown | 2026-10-16T08:27:31+00:00 |
 | [hagezi-tif](https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt) | ok | True | 36484 | unknown | 2026-10-16T08:27:31+00:00 |
