@@ -53,6 +53,7 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 |---|---|---|
 | `spamhaus-drop` | Spamhaus DROP (JSON) | provider timestamp, 72 h |
 | `abuseipdb-s100-7d` | AbuseIPDB score 100, 7 days (borestad) | provider timestamp, 72 h |
+| `abuseipdb-s100-30d` | AbuseIPDB score 100, 30 days (borestad) | provider timestamp, 72 h |
 | `firehol-level1` | FireHOL level 1 | provider timestamp, 168 h |
 | `firehol-level2` | FireHOL level 2 | provider timestamp, 168 h |
 | `firehol-level3` | FireHOL level 3 | provider timestamp, 168 h |
