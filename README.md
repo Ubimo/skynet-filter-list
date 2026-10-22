@@ -73,16 +73,13 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 | `myip-ms-latest-blacklist` | myip.ms latest | content, 168 h |
 | `hagezi-tif` | HaGeZi Threat Intelligence Feed (IPs) | content, 168 h |
 | `drb-ra-IPC2s-30day` | C2IntelFeeds, C2 IPs, 30 days | content, 168 h |
-| `threatfox-ipport` | abuse.ch ThreatFox, recent `ip:port` IOCs (botnet C2), confidence ≥ 75 | provider timestamp, 72 h |
 | `threatview-high-confidence` | Threatview.io high-confidence IPs | content, 168 h |
 
 Spamhaus copyright, terms, source and provider date are carried into its snapshot
 and into the combined file.
 
-Each provider's terms of use apply. ThreatFox (abuse.ch) grants free use under
-fair-use principles and may require a paid subscription for commercial use;
-Threatview does not state redistribution terms. Neither explicitly covers
-republishing in a public repository.
+Each provider's terms of use apply. Threatview does not state redistribution
+terms and does not explicitly cover republishing in a public repository.
 
 ## Validation
 
@@ -326,6 +323,11 @@ produced by the scripts and verified byte for byte.
     2026-10-16, about 3% turnover per day). It still has no age limit.
   - `abuseipdb-s100-7d` removed: every one of its 75,925 entries was also in
     `abuseipdb-s100-30d`, so it added no coverage.
+
+- **2026-10-22**: `threatfox-ipport` removed: abuse.ch has answered the
+  anonymous CSV export with HTTP 410 Gone since 2026-10-21; ThreatFox exports
+  now require an Auth-Key in the download URL. The `threatfox_csv` parser
+  stays available.
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).

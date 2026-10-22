@@ -3,9 +3,9 @@
 Automatically generated; historical notes are in `AUDIT-HISTORY.md`.
 
 - Checked at: 2026-10-22T13:46:47+00:00
-- Configured sources: 24
-- Contributing sources: 22
-- Combined IPv4/CIDR entries: 285652
+- Configured sources: 23
+- Contributing sources: 21
+- Combined IPv4/CIDR entries: 283812
 - Active / expired exceptions: 0 / 0
 - Maximum fallback age: 72 hours
 - Protected networks: 10 static + GitHub meta ok (68 ranges, last success 2026-10-22T13:46:47+00:00)
@@ -38,7 +38,6 @@ Last success means successful retrieval and validation, not an upstream observat
 | [abuseipdb-s100-30d](https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-30d.ipv4) | ok | True | 129311 | 2026-10-22T13:40:32+00:00 | 2026-10-22T13:46:47+00:00 |
 | [drb-ra-IPC2s-30day](https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv) | ok | True | 222 | unknown | 2026-10-22T13:46:47+00:00 |
 | [hagezi-tif](https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt) | ok | True | 37441 | unknown | 2026-10-22T13:46:47+00:00 |
-| [threatfox-ipport](https://threatfox.abuse.ch/export/csv/ip-port/recent/) | stale | True | 2465 | 2026-10-21T08:18:41+00:00 | 2026-10-21T08:30:56+00:00 |
 | [threatview-high-confidence](https://threatview.io/Downloads/IP-High-Confidence-Feed.txt) | ok | True | 19216 | unknown | 2026-10-22T13:46:47+00:00 |
 
 ## Automatic redundancy observation

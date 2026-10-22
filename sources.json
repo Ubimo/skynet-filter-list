@@ -161,18 +161,6 @@
     "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt"
   },
   {
-    "name": "threatfox-ipport",
-    "url": "https://threatfox.abuse.ch/export/csv/ip-port/recent/",
-    "parser": "threatfox_csv",
-    "min_confidence": 75,
-    "allow_ipv6": true,
-    "freshness": {
-      "type": "iso_comment",
-      "max_age_hours": 72
-    },
-    "policy_note": "2026-09-28: abuse.ch ThreatFox recent ip:port IOCs (botnet C2), confidence >= 75: 2,271 IPv4 hosts at review."
-  },
-  {
     "name": "threatview-high-confidence",
     "url": "https://threatview.io/Downloads/IP-High-Confidence-Feed.txt",
     "max_invalid_rows": 10,

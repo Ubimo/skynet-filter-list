@@ -433,8 +433,6 @@ class ParserExtensionTests(unittest.TestCase):
 
     def test_configured_new_sources_use_their_parsers(self):
         feeds = {f['name']: f for f in load_feeds(ROOT)}
-        self.assertEqual(feeds['threatfox-ipport']['parser'], 'threatfox_csv')
-        self.assertEqual(feeds['threatfox-ipport']['freshness']['type'], 'iso_comment')
         self.assertGreater(feeds['threatview-high-confidence']['max_invalid_rows'], 0)
 
 
