@@ -82,6 +82,8 @@ jobs:
         env:
           # Only sent to api.github.com (GitHub meta for protected.json).
           GITHUB_TOKEN: ${{ github.token }}
+          # Repository secret; only sent to threatfox-api.abuse.ch (see AUTH_SOURCES).
+          THREATFOX_AUTH_KEY: ${{ secrets.THREATFOX_AUTH_KEY }}
         run: python scripts/update_ipv4_feeds.py
       - name: Validate exact candidate, including bounded fallbacks
         run: |

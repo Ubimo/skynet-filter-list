@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from feed_policy import download, load_feeds, metrics, parse, serialize
+from feed_policy import download, fetch_feed, load_feeds, metrics, parse, serialize
 from update_ipv4_feeds import update
 from audit_sources import validate
 from rebuild_snapshot import rebuild
@@ -411,6 +411,64 @@ class ParserExtensionTests(unittest.TestCase):
         self.assertEqual(body, '8.8.8.8\n')
         self.assertEqual(parse(body, self.THREATFOX, published=True).networks, parsed.networks)
 
+    THREATFOX_API = dict(FEED, url='https://threatfox-api.abuse.ch/api/v1/', parser='threatfox_api',
+                         post_json={'query': 'get_iocs', 'days': 7},
+                         auth={'header': 'Auth-Key', 'env': 'THREATFOX_AUTH_KEY'}, min_confidence=75)
+
+    @staticmethod
+    def api(*rows, status='ok'):
+        return json.dumps({'query_status': status, 'data': [
+            {'ioc': ioc, 'ioc_type': kind, 'confidence_level': confidence} for ioc, kind, confidence in rows]})
+
+    def test_threatfox_api_uses_only_ip_port_and_filters_confidence(self):
+        body = self.api(('8.8.8.8:443', 'ip:port', 100), ('8.8.4.4:80', 'ip:port', 50),
+                        ('example.com', 'domain', 100), ('https://example.com/x', 'url', 100),
+                        ('[2001:db8::1]:443', 'ip:port', 90))
+        parsed = parse(body, dict(self.THREATFOX_API, allow_ipv6=True))
+        self.assertEqual({str(n) for n in parsed.networks}, {'8.8.8.8/32'})
+        self.assertEqual(parsed.ipv6, 1)
+        everything = parse(body, dict(self.THREATFOX_API, allow_ipv6=True, min_confidence=0))
+        self.assertEqual({str(n) for n in everything.networks}, {'8.8.8.8/32', '8.8.4.4/32'})
+        self.assertEqual(serialize(everything.networks), '8.8.4.4\n8.8.8.8\n')
+
+    def test_threatfox_api_rejects_errors_and_malformed_rows(self):
+        for body in (self.api(status='unknown_auth_key'), self.api(status='no_result'), '[]', '<html>',
+                     self.api(('8.8.8.8:443', 'ip:port', 'high')), self.api(('8.8.8.8', 'ip:port', 100)),
+                     self.api(('8.8.8.8:443', 'ip:port', True)), json.dumps({'query_status': 'ok', 'data': [1]})):
+            with self.subTest(body=body[:60]), self.assertRaises(ValueError):
+                parse(body, self.THREATFOX_API)
+
+    def test_threatfox_api_secret_only_from_environment_and_only_to_its_api(self):
+        with patch.dict(os.environ, {}, clear=True), self.assertRaisesRegex(ValueError, 'THREATFOX_AUTH_KEY is not set'):
+            fetch_feed(download, self.THREATFOX_API)
+        with patch.dict(os.environ, {'THREATFOX_AUTH_KEY': 'secret-key'}), \
+                patch('feed_policy.urllib.request.build_opener') as opener:
+            response = opener.return_value.open.return_value.__enter__.return_value
+            response.url = self.THREATFOX_API['url']
+            response.read.return_value = self.api(('8.8.8.8:443', 'ip:port', 100)).encode()
+            fetch_feed(download, self.THREATFOX_API)
+            request = opener.return_value.open.call_args.args[0]
+        self.assertEqual((request.get_method(), request.full_url), ('POST', self.THREATFOX_API['url']))
+        self.assertEqual(request.get_header('Auth-key'), 'secret-key')
+        self.assertEqual(json.loads(request.data), {'query': 'get_iocs', 'days': 7})
+        # A test fetcher never sees the secret, and the key is not in the configuration.
+        self.assertEqual(fetch_feed(lambda url: url, self.THREATFOX_API), self.THREATFOX_API['url'])
+        self.assertNotRegex((ROOT / 'sources.json').read_text(), r'[0-9a-fA-F]{32,}')
+
+    def test_auth_is_bound_to_its_api_host(self):
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__('shutil').rmtree(root))
+        for feed in (dict(self.THREATFOX_API, url='https://example.com/api'),
+                     dict(self.THREATFOX_API, auth={'header': 'Auth-Key', 'env': 'GITHUB_TOKEN'}),
+                     dict(self.THREATFOX_API, auth={'header': 'Auth-Key'}),
+                     dict(self.THREATFOX_API, auth={'header': 'Bad Header', 'env': 'THREATFOX_AUTH_KEY'}),
+                     dict(self.THREATFOX_API, post_json='get_iocs')):
+            (root / 'sources.json').write_text(json.dumps([feed]))
+            with self.subTest(feed=feed), self.assertRaises(ValueError):
+                load_feeds(root)
+        (root / 'sources.json').write_text(json.dumps([self.THREATFOX_API]))
+        self.assertEqual(load_feeds(root)[0]['auth']['env'], 'THREATFOX_AUTH_KEY')
+
     def test_invalid_rows_tolerated_only_up_to_limit_and_never_when_published(self):
         body = BODY + '120.229.26.013\n81.183.41.001\n'
         with self.assertRaisesRegex(ValueError, '2 invalid'):
@@ -434,6 +492,8 @@ class ParserExtensionTests(unittest.TestCase):
     def test_configured_new_sources_use_their_parsers(self):
         feeds = {f['name']: f for f in load_feeds(ROOT)}
         self.assertGreater(feeds['threatview-high-confidence']['max_invalid_rows'], 0)
+        self.assertEqual(feeds['threatfox-ipport']['parser'], 'threatfox_api')
+        self.assertEqual(feeds['threatfox-ipport']['min_confidence'], 0)
 
 
 class RepositoryTests(unittest.TestCase):

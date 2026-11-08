@@ -161,6 +161,22 @@
     "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt"
   },
   {
+    "name": "threatfox-ipport",
+    "url": "https://threatfox-api.abuse.ch/api/v1/",
+    "parser": "threatfox_api",
+    "post_json": {
+      "query": "get_iocs",
+      "days": 7
+    },
+    "auth": {
+      "header": "Auth-Key",
+      "env": "THREATFOX_AUTH_KEY"
+    },
+    "min_confidence": 0,
+    "allow_ipv6": true,
+    "policy_note": "2026-11-08: re-added via the authenticated ThreatFox API (get_iocs, IOCs first seen in the last 7 days), at the owner's request with all confidence levels. Auth-Key from the repository secret THREATFOX_AUTH_KEY. 1,741 IPv4 hosts at review, about 1,550 not covered by the other sources. No provider timestamp; aged by content."
+  },
+  {
     "name": "threatview-high-confidence",
     "url": "https://threatview.io/Downloads/IP-High-Confidence-Feed.txt",
     "max_invalid_rows": 10,

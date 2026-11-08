@@ -7,6 +7,7 @@ import hashlib
 import io
 import ipaddress
 import json
+import os
 from pathlib import Path
 import re
 import time
@@ -23,6 +24,9 @@ MAX_UNCHANGED_HOURS = 168
 # change in a source's size is accepted immediately, as long as the file passes
 # the content checks and contains at least one valid IPv4 entry.
 REMOVED_KEYS = ('minimum_entries', 'max_churn_ratio')
+# Secrets come only from the environment (GitHub Actions secrets), never from
+# sources.json, and each one is only ever sent to its own API.
+AUTH_SOURCES = {'THREATFOX_AUTH_KEY': 'https://threatfox-api.abuse.ch/'}
 # Conservative special-use policy; exceptions must be exact, reviewed prefixes.
 SPECIAL = tuple(ipaddress.IPv4Network(n) for n in (
     "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8",
@@ -52,7 +56,8 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
             raise ValueError(f"Invalid source name: {name}")
         if name in names or url in urls or not url.startswith("https://"):
             raise ValueError(f"Duplicate name/URL or non-HTTPS source: {name}")
-        if feed.get("parser", "first_field") not in ("first_field", "csv", "spamhaus_json", "threatfox_csv"):
+        if feed.get("parser", "first_field") not in ("first_field", "csv", "spamhaus_json", "threatfox_csv",
+                                                       "threatfox_api"):
             raise ValueError(f"Unknown parser: {name}")
         confidence = feed.get("min_confidence", 75)
         if isinstance(confidence, bool) or not isinstance(confidence, int) or not 0 <= confidence <= 100:
@@ -60,6 +65,15 @@ def load_feeds(root: Path = ROOT) -> list[dict]:
         tolerated = feed.get("max_invalid_rows", 0)
         if isinstance(tolerated, bool) or not isinstance(tolerated, int) or not 0 <= tolerated <= 100:
             raise ValueError(f"Invalid max_invalid_rows: {name}")
+        auth = feed.get("auth")
+        if auth is not None and (not isinstance(auth, dict) or set(auth) != {"header", "env"}
+                                 or not isinstance(auth["header"], str)
+                                 or not re.fullmatch(r"[A-Za-z0-9-]+", auth["header"])
+                                 or auth["env"] not in AUTH_SOURCES
+                                 or not url.startswith(AUTH_SOURCES[auth["env"]])):
+            raise ValueError(f"Invalid auth (secret not allowed for this URL): {name}")
+        if "post_json" in feed and not isinstance(feed["post_json"], dict):
+            raise ValueError(f"Invalid post_json: {name}")
         removed = [key for key in REMOVED_KEYS if key in feed]
         if removed:
             raise ValueError(f"Size limits were removed; delete {removed} from source: {name}")
@@ -86,11 +100,20 @@ def unchanged_limit(feed: dict):
     return feed.get('max_unchanged_hours', None if feed.get('freshness') else MAX_UNCHANGED_HOURS)
 
 
-def download(url: str, timeout: float = 30, retries: int = 1, headers: dict | None = None) -> str:
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Requests carrying a secret must not follow redirects to another host."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError(f"Refusing redirect (HTTP {code})")
+
+
+def download(url: str, timeout: float = 30, retries: int = 1, headers: dict | None = None,
+             data: bytes | None = None, redirects: bool = True) -> str:
+    open_url = urllib.request.urlopen if redirects else urllib.request.build_opener(NoRedirect).open
     for attempt in range(retries + 1):
         try:
-            request = urllib.request.Request(url, headers={"User-Agent": "skynet-filter-list/3.0", **(headers or {})})
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            request = urllib.request.Request(url, data=data, headers={"User-Agent": "skynet-filter-list/3.0", **(headers or {})},
+                                             method="POST" if data is not None else "GET")
+            with open_url(request, timeout=timeout) as response:
                 if not response.url.startswith("https://"):
                     raise ValueError("Refusing HTTPS downgrade")
                 content = response.read(MAX_SOURCE_BYTES + 1)
@@ -102,6 +125,47 @@ def download(url: str, timeout: float = 30, retries: int = 1, headers: dict | No
                 raise
             time.sleep(1)
     raise AssertionError("unreachable")
+
+
+def fetch_feed(fetch, feed: dict) -> str:
+    """Plain sources: GET. API sources: optional JSON POST body and an Auth header
+    whose value is read from the environment. Test fetchers only get the URL."""
+    if fetch is not download or not (feed.get('auth') or 'post_json' in feed):
+        return fetch(feed['url'])
+    headers, data = {}, None
+    if feed.get('auth'):
+        secret = os.environ.get(feed['auth']['env'], '').strip()
+        if not secret:
+            raise ValueError(f"Secret {feed['auth']['env']} is not set")
+        headers[feed['auth']['header']] = secret
+    if 'post_json' in feed:
+        data = json.dumps(feed['post_json']).encode('utf-8')
+        headers['Content-Type'] = 'application/json'
+    return download(feed['url'], timeout=60, headers=headers, data=data, redirects=False)
+
+
+def threatfox_api_rows(body: str, feed: dict) -> str:
+    """ThreatFox API `get_iocs` JSON -> one address per ip:port IOC, filtered by
+    confidence. The API returns every IOC type; only ip:port is used, and any
+    malformed ip:port row rejects the file."""
+    reply = json.loads(body)
+    status = reply.get('query_status') if isinstance(reply, dict) else None
+    if status != 'ok' or not isinstance(reply.get('data'), list):
+        raise ValueError(f'ThreatFox API query_status: {status!r}')
+    minimum = feed.get('min_confidence', 75)
+    selected = []
+    for row in reply['data']:
+        if not isinstance(row, dict) or not isinstance(row.get('ioc_type'), str):
+            raise ValueError('Invalid ThreatFox API row')
+        if row['ioc_type'] != 'ip:port':
+            continue
+        ioc, confidence = row.get('ioc'), row.get('confidence_level')
+        if (not isinstance(ioc, str) or ':' not in ioc or isinstance(confidence, bool)
+                or not isinstance(confidence, int)):
+            raise ValueError(f'Invalid ThreatFox API row: {str(ioc)[:60]}')
+        if confidence >= minimum:
+            selected.append(ioc.rsplit(':', 1)[0].strip('[]'))
+    return '\n'.join(selected)
 
 
 def threatfox_rows(body: str, feed: dict) -> str:
@@ -122,6 +186,8 @@ def parse(body: str, feed: dict, *, published: bool = False) -> Parsed:
     result = Parsed(set())
     if not published and feed.get('parser') == 'threatfox_csv':
         body = threatfox_rows(body, feed)
+    if not published and feed.get('parser') == 'threatfox_api':
+        body = threatfox_api_rows(body, feed)
     if not published and feed.get('parser') == 'spamhaus_json':
         rows = [json.loads(line) for line in body.splitlines() if line.strip()]
         if any('cidr' not in row and row.get('type') != 'metadata' for row in rows):

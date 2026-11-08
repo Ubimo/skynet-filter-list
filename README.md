@@ -73,13 +73,16 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 | `myip-ms-latest-blacklist` | myip.ms latest | content, 168 h |
 | `hagezi-tif` | HaGeZi Threat Intelligence Feed (IPs) | content, 168 h |
 | `drb-ra-IPC2s-30day` | C2IntelFeeds, C2 IPs, 30 days | content, 168 h |
+| `threatfox-ipport` | abuse.ch ThreatFox API, `ip:port` IOCs first seen in the last 7 days, all confidence levels (Auth-Key) | content, 168 h |
 | `threatview-high-confidence` | Threatview.io high-confidence IPs | content, 168 h |
 
 Spamhaus copyright, terms, source and provider date are carried into its snapshot
 and into the combined file.
 
-Each provider's terms of use apply. Threatview does not state redistribution
-terms and does not explicitly cover republishing in a public repository.
+Each provider's terms of use apply. ThreatFox (abuse.ch) grants free use under
+fair-use principles and may require a paid subscription for commercial use;
+Threatview does not state redistribution terms. Neither explicitly covers
+republishing in a public repository.
 
 ## Validation
 
@@ -89,9 +92,12 @@ Every source must pass all checks before its data is accepted:
   invalid rows, at least one valid IPv4 entry. A reviewed source may drop up
   to `max_invalid_rows` malformed upstream rows (at most 100; counted as
   `excluded_invalid`); published snapshots never contain any.
-- **Formats**: plain lists (first field), CSV, Spamhaus JSON, and ThreatFox CSV
+- **Formats**: plain lists (first field), CSV, Spamhaus JSON, ThreatFox CSV
   (`threatfox_csv`: the address from `ioc_value`, rows below `min_confidence`
-  dropped, any unexpected row rejects the file).
+  dropped, any unexpected row rejects the file) and the ThreatFox API
+  (`threatfox_api`: `get_iocs` JSON, only `ip:port` IOCs are used, rows below
+  `min_confidence` dropped, an API error or a malformed `ip:port` row rejects the
+  file).
 - **Scope**: no network broader than `/12`, no default route. Special-use entries
   are removed; more than 1% of them (one is tolerated) rejects the file. FireHOL
   level 1 may keep its reviewed fullbogon prefixes (`allowed_special`) in its own
@@ -227,11 +233,20 @@ aborted.
 If Actions stops entirely, nothing here can expire data already loaded on a
 router; the router keeps its last downloaded list.
 
+**Secrets**: `threatfox-ipport` needs the repository secret `THREATFOX_AUTH_KEY`
+(Settings → Secrets and variables → Actions; key from auth.abuse.ch). It is only
+passed to the refresh step, read from the environment, sent only to
+`https://threatfox-api.abuse.ch/` (`AUTH_SOURCES` in `feed_policy.py`, redirects
+refused) and never written to `sources.json`, snapshots or `status.json`. Without
+it the source is reported as `disabled` ("Secret THREATFOX_AUTH_KEY is not set")
+and the other sources are published as usual.
+
 ## Maintenance
 
 **Add a source**: add an entry to `sources.json` (unique `name` and `https://`
 URL, optional `freshness`, `parser`, `max_unchanged_hours`, `max_invalid_rows`,
-`min_confidence`, `allow_ipv6`, `redundancy_candidate`) and open a PR. The first refresh after merging fetches it.
+`min_confidence`, `allow_ipv6`, `redundancy_candidate`, and for APIs `post_json`
+and `auth` with an environment secret listed in `AUTH_SOURCES`) and open a PR. The first refresh after merging fetches it.
 
 **Remove a source**: delete it from `sources.json` and rebuild the snapshot
 offline in the same PR:
@@ -328,6 +343,12 @@ produced by the scripts and verified byte for byte.
   anonymous CSV export with HTTP 410 Gone since 2026-10-21; ThreatFox exports
   now require an Auth-Key in the download URL. The `threatfox_csv` parser
   stays available.
+
+- **2026-11-08**: `threatfox-ipport` re-added via the authenticated ThreatFox
+  API (`get_iocs`, IOCs first seen in the last 7 days, all confidence levels, at
+  the owner's request). The Auth-Key comes from the repository secret
+  `THREATFOX_AUTH_KEY`. 1,741 IPv4 hosts at review, about 1,550 of them not
+  covered by the other sources.
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).

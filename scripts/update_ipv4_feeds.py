@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 from feed_policy import (
-    ROOT, RAW_PREFIX, MAX_STALE_HOURS, atomic_write, digest, download, load_feeds, metrics, parse,
+    ROOT, RAW_PREFIX, MAX_STALE_HOURS, atomic_write, digest, download, fetch_feed, load_feeds, metrics, parse,
     snapshot_body, unchanged_limit,
 )
 from feed_analysis import combine, load_allowlist, protection_effect, select_sources, turnover
@@ -62,7 +62,7 @@ def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
     old = previous_snapshot(root, feed, previous, now)
     name = feed["name"]
     try:
-        upstream = fetch(feed["url"])
+        upstream = fetch_feed(fetch, feed)
         meta = metadata(upstream, feed, now)
         parsed = parse(upstream, feed)
         current = metrics(parsed.networks, feed)
