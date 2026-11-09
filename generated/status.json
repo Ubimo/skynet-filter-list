@@ -1,89 +1,89 @@
 {
-  "checked_at": "2026-11-08T19:03:34+00:00",
+  "checked_at": "2026-11-09T11:25:55+00:00",
   "sources": {
     "greensnow": {
       "url": "https://blocklist.greensnow.co/greensnow.txt",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 2627,
-        "public_addresses": 2627
+        "entries": 1976,
+        "public_addresses": 1976
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 330,
-        "removed_addresses": 1100,
-        "added_ratio": 0.12561857632280168,
-        "removed_ratio": 0.32381513099793935
+        "added_addresses": 781,
+        "removed_addresses": 1432,
+        "added_ratio": 0.3952429149797571,
+        "removed_ratio": 0.5451084887704606
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "e04b491e5c6d23efbd1a6ac45d7a5d27307cd58a0c73a233fca5c54227b6343a",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "78f5ba9350a60a6a45be65018ee2c13ce47194ced167312925e6e24532b57e9b",
       "included": true
     },
     "binarydefense": {
       "url": "https://www.binarydefense.com/banlist.txt",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 1629,
-        "public_addresses": 1629
+        "entries": 1920,
+        "public_addresses": 1920
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 0,
+        "added_addresses": 291,
         "removed_addresses": 0,
-        "added_ratio": 0.0,
+        "added_ratio": 0.1515625,
         "removed_ratio": 0.0
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T10:15:07+00:00",
-      "sha256": "b9783f491e215875986c293c01e2a1599dfa3b421920294e99c8a400094c0ad4",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "5366689ce6fe0161a7283776f8b038b3f0a71dcf637e482658fcfa7299f43eeb",
       "included": true
     },
     "firehol-blocklist-net-ua": {
       "url": "https://iplists.firehol.org/files/blocklist_net_ua.ipset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 219128,
-        "public_addresses": 219128
+        "entries": 217633,
+        "public_addresses": 217633
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 1478,
-        "removed_addresses": 2284,
-        "added_ratio": 0.0067449162133547515,
-        "removed_ratio": 0.010384933661916756
+        "added_addresses": 2970,
+        "removed_addresses": 4465,
+        "added_ratio": 0.013646827457233049,
+        "removed_ratio": 0.020376218465919464
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "d0ce096955f68a86b21d690a4aea0df3937d441693139e3e6d53999f0d9a6343",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "0be380a01c130c556c600a9f27e351494fd0ea7ecb575fd622af9ed6f5a6dd15",
       "included": true
     },
     "cins-army": {
       "url": "https://cinsscore.com/list/ci-badguys.txt",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
         "entries": 15000,
         "public_addresses": 15000
@@ -93,75 +93,75 @@
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 3315,
-        "removed_addresses": 3315,
-        "added_ratio": 0.221,
-        "removed_ratio": 0.221
+        "added_addresses": 4697,
+        "removed_addresses": 4697,
+        "added_ratio": 0.3131333333333333,
+        "removed_ratio": 0.3131333333333333
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "e391e92e62db66f7a1eb04d47006afa7e3f8fb3d507e624f8fa6ccf70d41924b",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "fa203ffa42fa81b29b8e77aee2f6db6be9dcb3c92bbf769dbfd20157130e9e3f",
       "included": true
     },
     "firehol-cybercrime": {
       "url": "https://iplists.firehol.org/files/cybercrime.ipset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 515,
-        "public_addresses": 515
+        "entries": 516,
+        "public_addresses": 516
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 0,
+        "added_addresses": 1,
         "removed_addresses": 0,
-        "added_ratio": 0.0,
+        "added_ratio": 0.001937984496124031,
         "removed_ratio": 0.0
       },
-      "upstream_updated_at": "2026-11-07T00:17:05+00:00",
-      "upstream_deadline": "2026-11-14T00:17:05+00:00",
+      "upstream_updated_at": "2026-11-09T03:08:47+00:00",
+      "upstream_deadline": "2026-11-16T03:08:47+00:00",
       "attribution": [],
-      "content_changed_at": "2026-11-07T10:01:11+00:00",
-      "sha256": "5dcfc27b5b4c94471eeae10454e173612787fc0abbf90e9cd5538ff64eb614e7",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "45484dd770dc38c810c2288702bde2ffa654a74c6b0c826cf3a21490abda93cf",
       "included": true
     },
     "firehol-dshield-1d": {
       "url": "https://iplists.firehol.org/files/dshield_1d.netset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 31,
-        "public_addresses": 8192
+        "entries": 34,
+        "public_addresses": 8704
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
+        "added_addresses": 2304,
+        "removed_addresses": 1792,
+        "added_ratio": 0.2647058823529412,
+        "removed_ratio": 0.21875
       },
-      "upstream_updated_at": "2026-11-08T02:44:36+00:00",
-      "upstream_deadline": "2026-11-15T02:44:36+00:00",
+      "upstream_updated_at": "2026-11-09T04:44:35+00:00",
+      "upstream_deadline": "2026-11-16T04:44:35+00:00",
       "attribution": [],
-      "content_changed_at": "2026-11-08T10:15:07+00:00",
-      "sha256": "4a573a41aab71ea03c463b7da4b8ba3a0c3626b9458143db9dcc7cbe1609af60",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "000bb2e3bcebd3388b9bd1aec356641f1ae7c1881a048b1874407e4c3e312251",
       "included": false
     },
     "firehol-et-block": {
       "url": "https://iplists.firehol.org/files/et_block.netset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
         "entries": 1646,
         "public_addresses": 14901253
@@ -186,8 +186,8 @@
     "firehol-et-compromised": {
       "url": "https://iplists.firehol.org/files/et_compromised.ipset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
         "entries": 511,
         "public_addresses": 511
@@ -212,138 +212,138 @@
     "firehol-level1": {
       "url": "https://iplists.firehol.org/files/firehol_level1.netset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 4649,
-        "public_addresses": 18390337
+        "entries": 4648,
+        "public_addresses": 18390081
       },
       "excluded_ipv6": 0,
       "excluded_special": 1,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 256,
-        "removed_addresses": 256,
-        "added_ratio": 1.3920353933698986e-05,
-        "removed_ratio": 1.3920353933698986e-05
+        "added_addresses": 2304,
+        "removed_addresses": 2560,
+        "added_ratio": 0.00012528492941385087,
+        "removed_ratio": 0.00013920353933698985
       },
-      "upstream_updated_at": "2026-11-08T05:44:38+00:00",
-      "upstream_deadline": "2026-11-15T05:44:38+00:00",
+      "upstream_updated_at": "2026-11-09T04:44:35+00:00",
+      "upstream_deadline": "2026-11-16T04:44:35+00:00",
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "7ca6a85a557fc363ca32cbaca045d9dbca4b971d224ab52b6381c0a7481afbc0",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "2bb044b7f128bbcd06313553faf2dfbb59d5e7de88aeff0f210d18200f737b17",
       "included": true
     },
     "firehol-level2": {
       "url": "https://iplists.firehol.org/files/firehol_level2.netset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 16200,
-        "public_addresses": 33207
+        "entries": 16032,
+        "public_addresses": 33605
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 1955,
-        "removed_addresses": 3762,
-        "added_ratio": 0.05887312915951456,
-        "removed_ratio": 0.10744273719083795
+        "added_addresses": 5790,
+        "removed_addresses": 5392,
+        "added_ratio": 0.1722957893170659,
+        "removed_ratio": 0.16237540277652301
       },
-      "upstream_updated_at": "2026-11-08T14:48:44+00:00",
-      "upstream_deadline": "2026-11-15T14:48:44+00:00",
+      "upstream_updated_at": "2026-11-09T05:36:54+00:00",
+      "upstream_deadline": "2026-11-16T05:36:54+00:00",
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "37d4b4bbff76a64d940f6efc260f418d41571ffd1da1626de5d1ebf4755fffca",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "df1e4970286c856c93db56325f82caf6ec2d20e89c67c783e9196fdb78da1f71",
       "included": true
     },
     "firehol-level3": {
       "url": "https://iplists.firehol.org/files/firehol_level3.netset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 12903,
-        "public_addresses": 34958
+        "entries": 12817,
+        "public_addresses": 34868
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 3549,
-        "removed_addresses": 3153,
-        "added_ratio": 0.10152182619142971,
-        "removed_ratio": 0.0912273595278051
+        "added_addresses": 3326,
+        "removed_addresses": 3416,
+        "added_ratio": 0.09538832167029941,
+        "removed_ratio": 0.09771726071285543
       },
-      "upstream_updated_at": "2026-11-08T14:46:05+00:00",
-      "upstream_deadline": "2026-11-15T14:46:05+00:00",
+      "upstream_updated_at": "2026-11-09T05:34:04+00:00",
+      "upstream_deadline": "2026-11-16T05:34:04+00:00",
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "3df49fe1f54428e2a8311fa2ea7addb6bd29128f07df6372418f66a2b53ae7da",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "650c3ca4d1dcaa4b2e1061548332822b81d3a28b224eb8db8999975c72c66dbd",
       "included": true
     },
     "firehol-webserver": {
       "url": "https://iplists.firehol.org/files/firehol_webserver.netset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 1024,
-        "public_addresses": 60652
+        "entries": 986,
+        "public_addresses": 60613
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
+        "added_addresses": 73,
+        "removed_addresses": 112,
+        "added_ratio": 0.0012043621005394882,
+        "removed_ratio": 0.0018466002769900415
       },
-      "upstream_updated_at": "2026-11-07T15:00:48+00:00",
-      "upstream_deadline": "2026-11-14T15:00:48+00:00",
+      "upstream_updated_at": "2026-11-08T17:00:47+00:00",
+      "upstream_deadline": "2026-11-15T17:00:47+00:00",
       "attribution": [],
-      "content_changed_at": "2026-11-08T10:15:07+00:00",
-      "sha256": "0c8912706e27c4a71f14c73500732b0f5619bfe385a5f74199f34f9c1f85a4f7",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "ee2058399764886dc213e8cecdca947d6e030436f1847bc5a63079077301374b",
       "included": true
     },
     "firehol-myip": {
       "url": "https://iplists.firehol.org/files/myip.ipset",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 1155,
-        "public_addresses": 1155
+        "entries": 1116,
+        "public_addresses": 1116
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
+        "added_addresses": 73,
+        "removed_addresses": 112,
+        "added_ratio": 0.06541218637992832,
+        "removed_ratio": 0.09696969696969697
       },
-      "upstream_updated_at": "2026-11-07T15:00:48+00:00",
-      "upstream_deadline": "2026-11-14T15:00:48+00:00",
+      "upstream_updated_at": "2026-11-08T17:00:47+00:00",
+      "upstream_deadline": "2026-11-15T17:00:47+00:00",
       "attribution": [],
-      "content_changed_at": "2026-11-08T10:15:07+00:00",
-      "sha256": "1593d406fadb154603535e64ade8c7eb38aeff7853a2a7185e2fcbaa2a905295",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "34389917d3c32fccd255f72818553bf5477b7914a347582e12b706e0ab4e54a5",
       "included": false
     },
     "spamhaus-drop": {
       "url": "https://www.spamhaus.org/drop/drop_v4.json",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
         "entries": 1761,
         "public_addresses": 14897664
@@ -358,26 +358,26 @@
         "added_ratio": 0.0,
         "removed_ratio": 0.0
       },
-      "upstream_updated_at": "2026-11-08T18:14:02+00:00",
-      "upstream_deadline": "2026-11-11T18:14:02+00:00",
+      "upstream_updated_at": "2026-11-08T11:14:02+00:00",
+      "upstream_deadline": "2026-11-11T11:14:02+00:00",
       "attribution": [
         "(c) 2026 The Spamhaus Project SLU",
         "Terms: https://www.spamhaus.org/drop/terms/",
         "Source: https://www.spamhaus.org/drop/drop_v4.json",
-        "Upstream updated: 2026-11-08T18:14:02+00:00"
+        "Upstream updated: 2026-11-08T11:14:02+00:00"
       ],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "e11e42a9cbcfeadca3dcfe402b8391d691a3051a17b85a22c6865e5d716f3dc7",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "aa5482d376eadfb5a5d40c8aad521e5d7572e382a76ba1214187965302c413dd",
       "included": true
     },
     "blocklist-de-strongips": {
       "url": "https://lists.blocklist.de/lists/strongips.txt",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 297,
-        "public_addresses": 297
+        "entries": 294,
+        "public_addresses": 294
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
@@ -387,49 +387,153 @@
         "added_addresses": 0,
         "removed_addresses": 3,
         "added_ratio": 0.0,
-        "removed_ratio": 0.01
+        "removed_ratio": 0.010101010101010102
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "732031ebbaf9db727c5fc01b8895c25274d1bc9303a456a8ef0bd18eb7996421",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "526b35a9b1618c20dcebbddec1a52d7b24205ab1e4d60270aed5048e0e123687",
       "included": true
     },
     "myip-ms-latest-blacklist": {
       "url": "https://myip.ms/files/blacklist/general/latest_blacklist.txt",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 1119,
-        "public_addresses": 1119
+        "entries": 1099,
+        "public_addresses": 1099
       },
       "excluded_ipv6": 14,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 25,
-        "removed_addresses": 26,
-        "added_ratio": 0.022341376228775692,
-        "removed_ratio": 0.023214285714285715
+        "added_addresses": 53,
+        "removed_addresses": 73,
+        "added_ratio": 0.048225659690627844,
+        "removed_ratio": 0.06523681858802502
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "34918a011847815417dcb5053615c338c8c656e2d2925a9b77cd7058376d464a",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "c266ab755c954df8954236d5bc9df1925a46f9b222c4d0de623b7730fc8c9876",
       "included": true
     },
     "ipsum-level2": {
       "url": "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 33573,
-        "public_addresses": 33573
+        "entries": 34332,
+        "public_addresses": 34332
+      },
+      "excluded_ipv6": 0,
+      "excluded_special": 0,
+      "excluded_invalid": 0,
+      "error": null,
+      "turnover": {
+        "added_addresses": 5522,
+        "removed_addresses": 4763,
+        "added_ratio": 0.16084119771641617,
+        "removed_ratio": 0.14186995502338187
+      },
+      "upstream_updated_at": null,
+      "upstream_deadline": null,
+      "attribution": [],
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "8593742904e98ef7332e1daf542daeb471acb75bff2645de9993f34c96cccf8e",
+      "included": true
+    },
+    "interserver-iprbl": {
+      "url": "https://sigs.interserver.net/iprbl.txt",
+      "status": "ok",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
+      "metrics": {
+        "entries": 4189,
+        "public_addresses": 4189
+      },
+      "excluded_ipv6": 0,
+      "excluded_special": 1,
+      "excluded_invalid": 0,
+      "error": null,
+      "turnover": {
+        "added_addresses": 74,
+        "removed_addresses": 126,
+        "added_ratio": 0.01766531391740272,
+        "removed_ratio": 0.029709974062721058
+      },
+      "upstream_updated_at": null,
+      "upstream_deadline": null,
+      "attribution": [],
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "2a6dc155081aa56f5e36a42adb070e63ced5b2952ce804a335555171bc3b63d0",
+      "included": true
+    },
+    "blocklist-de-export-ips-all": {
+      "url": "https://www.blocklist.de/downloads/export-ips_all.txt",
+      "status": "ok",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
+      "metrics": {
+        "entries": 24297,
+        "public_addresses": 24297
+      },
+      "excluded_ipv6": 243,
+      "excluded_special": 0,
+      "excluded_invalid": 0,
+      "error": null,
+      "turnover": {
+        "added_addresses": 4560,
+        "removed_addresses": 4176,
+        "added_ratio": 0.18767749104827758,
+        "removed_ratio": 0.17463304478735417
+      },
+      "upstream_updated_at": null,
+      "upstream_deadline": null,
+      "attribution": [],
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "d41e128eb47c70334f8d4f24b4667a4f51201220cd86ca76b6fc5d274038043b",
+      "included": true
+    },
+    "abuseipdb-s100-30d": {
+      "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-30d.ipv4",
+      "status": "ok",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
+      "metrics": {
+        "entries": 132411,
+        "public_addresses": 132411
+      },
+      "excluded_ipv6": 0,
+      "excluded_special": 0,
+      "excluded_invalid": 0,
+      "error": null,
+      "turnover": {
+        "added_addresses": 1329,
+        "removed_addresses": 2213,
+        "added_ratio": 0.010036930466502027,
+        "removed_ratio": 0.01660227315353164
+      },
+      "upstream_updated_at": "2026-11-09T11:06:18+00:00",
+      "upstream_deadline": "2026-11-12T11:06:18+00:00",
+      "attribution": [],
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "605ae67d14cdec8a87c12ea3f18ec6c535f5727816ca953035d6d1ddbea04062",
+      "included": true
+    },
+    "drb-ra-IPC2s-30day": {
+      "url": "https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv",
+      "status": "ok",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
+      "metrics": {
+        "entries": 228,
+        "public_addresses": 228
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
@@ -440,110 +544,6 @@
         "removed_addresses": 0,
         "added_ratio": 0.0,
         "removed_ratio": 0.0
-      },
-      "upstream_updated_at": null,
-      "upstream_deadline": null,
-      "attribution": [],
-      "content_changed_at": "2026-11-08T10:15:07+00:00",
-      "sha256": "e72bcfc7e4151b7a595aded3ca9ec03f2399c66922c745788e5b3a0a310551b9",
-      "included": true
-    },
-    "interserver-iprbl": {
-      "url": "https://sigs.interserver.net/iprbl.txt",
-      "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
-      "metrics": {
-        "entries": 4241,
-        "public_addresses": 4241
-      },
-      "excluded_ipv6": 0,
-      "excluded_special": 1,
-      "excluded_invalid": 0,
-      "error": null,
-      "turnover": {
-        "added_addresses": 40,
-        "removed_addresses": 103,
-        "added_ratio": 0.009431737797689225,
-        "removed_ratio": 0.023931226765799257
-      },
-      "upstream_updated_at": null,
-      "upstream_deadline": null,
-      "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "b5a0ff576ad574e3ec5ddee978b7fc096966ee83b07897cc05df7b23229e1fb5",
-      "included": true
-    },
-    "blocklist-de-export-ips-all": {
-      "url": "https://www.blocklist.de/downloads/export-ips_all.txt",
-      "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
-      "metrics": {
-        "entries": 23913,
-        "public_addresses": 23913
-      },
-      "excluded_ipv6": 213,
-      "excluded_special": 0,
-      "excluded_invalid": 0,
-      "error": null,
-      "turnover": {
-        "added_addresses": 1698,
-        "removed_addresses": 2514,
-        "added_ratio": 0.0710074018316397,
-        "removed_ratio": 0.1016620162562174
-      },
-      "upstream_updated_at": null,
-      "upstream_deadline": null,
-      "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "9b29eb8ed6460ef0ae1057273ef9532dfcb83bf664291386ca2a59a33aec753d",
-      "included": true
-    },
-    "abuseipdb-s100-30d": {
-      "url": "https://raw.githubusercontent.com/borestad/blocklist-abuseipdb/main/abuseipdb-s100-30d.ipv4",
-      "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
-      "metrics": {
-        "entries": 133295,
-        "public_addresses": 133295
-      },
-      "excluded_ipv6": 0,
-      "excluded_special": 0,
-      "excluded_invalid": 0,
-      "error": null,
-      "turnover": {
-        "added_addresses": 325,
-        "removed_addresses": 0,
-        "added_ratio": 0.00243820098278255,
-        "removed_ratio": 0.0
-      },
-      "upstream_updated_at": "2026-11-08T18:33:22+00:00",
-      "upstream_deadline": "2026-11-11T18:33:22+00:00",
-      "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "e058db0c1569c19338f9b39f22c090a6b598e4f714895ccc278b87c1ce5a1be0",
-      "included": true
-    },
-    "drb-ra-IPC2s-30day": {
-      "url": "https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv",
-      "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
-      "metrics": {
-        "entries": 228,
-        "public_addresses": 228
-      },
-      "excluded_ipv6": 0,
-      "excluded_special": 0,
-      "excluded_invalid": 0,
-      "error": null,
-      "turnover": {
-        "added_addresses": 2,
-        "removed_addresses": 1,
-        "added_ratio": 0.008771929824561403,
-        "removed_ratio": 0.004405286343612335
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
@@ -555,74 +555,79 @@
     "hagezi-tif": {
       "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 35293,
-        "public_addresses": 35293
+        "entries": 35556,
+        "public_addresses": 35556
       },
       "excluded_ipv6": 0,
       "excluded_special": 3,
       "excluded_invalid": 0,
       "error": null,
       "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
+        "added_addresses": 2716,
+        "removed_addresses": 2453,
+        "added_ratio": 0.0763865451681854,
+        "removed_ratio": 0.06950386762247471
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T10:15:07+00:00",
-      "sha256": "47b655d6130229fe8910c45e630ef211b0ad910dff5fefd5618f41b068276a73",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "d083510ba5bf7104bc2c1e3dce0a8ad1a78338924561096433e0bc8fed5d8efb",
       "included": true
     },
     "threatfox-ipport": {
       "url": "https://threatfox-api.abuse.ch/api/v1/",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 1742,
-        "public_addresses": 1742
+        "entries": 1720,
+        "public_addresses": 1720
       },
       "excluded_ipv6": 0,
       "excluded_special": 0,
       "excluded_invalid": 0,
       "error": null,
-      "turnover": null,
+      "turnover": {
+        "added_addresses": 72,
+        "removed_addresses": 94,
+        "added_ratio": 0.04186046511627907,
+        "removed_ratio": 0.0539609644087256
+      },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T19:03:34+00:00",
-      "sha256": "2c84e13db5e95a5cd4419f51ca20b0be2aaa577406276d4dc4a715f73dc13f55",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "4d13713e374aabf410e831e915b5120361965c030515b57e33854453d56cebb2",
       "included": true
     },
     "threatview-high-confidence": {
       "url": "https://threatview.io/Downloads/IP-High-Confidence-Feed.txt",
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "metrics": {
-        "entries": 17224,
-        "public_addresses": 17224
+        "entries": 14449,
+        "public_addresses": 14449
       },
-      "excluded_ipv6": 295,
+      "excluded_ipv6": 313,
       "excluded_special": 6,
       "excluded_invalid": 2,
       "error": null,
       "turnover": {
-        "added_addresses": 0,
-        "removed_addresses": 0,
-        "added_ratio": 0.0,
-        "removed_ratio": 0.0
+        "added_addresses": 6418,
+        "removed_addresses": 9193,
+        "added_ratio": 0.44418298844210674,
+        "removed_ratio": 0.5337320018578727
       },
       "upstream_updated_at": null,
       "upstream_deadline": null,
       "attribution": [],
-      "content_changed_at": "2026-11-08T10:15:07+00:00",
-      "sha256": "dcb03049cbc2a52ac974caf9598f9470ff4ccda711b001bd1adf1a406fc29ccd",
+      "content_changed_at": "2026-11-09T11:25:55+00:00",
+      "sha256": "f648b8bcbb5599671a437826af578f96c7b841dcb2c325981c8822c9311c5f4c",
       "included": true
     }
   },
@@ -635,9 +640,9 @@
         "policy_note": "2026-09-28: replaces the FireHOL ciarmy mirror (same CI Army data, ~6h fresher). No provider timestamp; aged by content via max_unchanged_hours."
       },
       "since": null,
-      "last_observed": "2026-11-08T19:03:34+00:00",
+      "last_observed": "2026-11-09T11:25:55+00:00",
       "days": 0,
-      "unique_addresses": 832,
+      "unique_addresses": 1691,
       "suppressed": false
     },
     "firehol-dshield-1d": {
@@ -651,8 +656,8 @@
         "redundancy_candidate": true
       },
       "since": "2026-10-01T10:16:07+00:00",
-      "last_observed": "2026-11-08T19:03:34+00:00",
-      "days": 39,
+      "last_observed": "2026-11-09T11:25:55+00:00",
+      "days": 40,
       "unique_addresses": 0,
       "suppressed": true
     },
@@ -667,7 +672,7 @@
         "redundancy_candidate": true
       },
       "since": null,
-      "last_observed": "2026-11-08T19:03:34+00:00",
+      "last_observed": "2026-11-09T11:25:55+00:00",
       "days": 0,
       "unique_addresses": 255,
       "suppressed": false
@@ -683,8 +688,8 @@
         "redundancy_candidate": true
       },
       "since": "2026-10-01T10:16:07+00:00",
-      "last_observed": "2026-11-08T19:03:34+00:00",
-      "days": 39,
+      "last_observed": "2026-11-09T11:25:55+00:00",
+      "days": 40,
       "unique_addresses": 0,
       "suppressed": true
     },
@@ -698,16 +703,16 @@
         "allow_ipv6": true
       },
       "since": null,
-      "last_observed": "2026-11-08T19:03:34+00:00",
+      "last_observed": "2026-11-09T11:25:55+00:00",
       "days": 0,
-      "unique_addresses": 4247,
+      "unique_addresses": 2860,
       "suppressed": false
     }
   },
   "combined": {
-    "entries": 288765,
-    "sha256": "9e42d99ad86779f6be247e0f4b17213949764a83acb6545b729fc0f036212e7e",
-    "public_addresses": 18802148
+    "entries": 285569,
+    "sha256": "4717ff31abcf4d254ed52a7f8375ed4d2653d33016ab3a62c47ddb3b92f8df4f",
+    "public_addresses": 18799073
   },
   "allowlist_active": [],
   "allowlist_expired": [],
@@ -722,15 +727,17 @@
         "pages"
       ],
       "status": "ok",
-      "last_success": "2026-11-08T19:03:34+00:00",
-      "checked_at": "2026-11-08T19:03:34+00:00",
+      "last_success": "2026-11-09T11:25:55+00:00",
+      "checked_at": "2026-11-09T11:25:55+00:00",
       "error": null,
       "entries": 88,
       "addresses": 10701,
       "sha256": "2e951b464ae6d198b9fa4ab0b97f2218068af56b96297225ad466bd94b8d4c00"
     },
-    "removed_addresses": 5,
+    "removed_addresses": 6,
     "removed_by_source": {
+      "abuseipdb-s100-30d": 1,
+      "firehol-blocklist-net-ua": 1,
       "firehol-level3": 5
     }
   }
