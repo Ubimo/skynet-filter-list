@@ -1,7 +1,7 @@
 # (c) 2026 The Spamhaus Project SLU
 # Terms: https://www.spamhaus.org/drop/terms/
 # Source: https://www.spamhaus.org/drop/drop_v4.json
-# Upstream updated: 2026-11-13T09:26:44+00:00
+# Upstream updated: 2026-11-13T15:56:44+00:00
 1.10.16.0/20
 1.19.0.0/16
 1.32.128.0/18
@@ -801,6 +801,7 @@
 150.10.0.0/16
 150.22.128.0/17
 150.25.0.0/16
+150.40.98.0/24
 150.129.212.0/22
 150.242.120.0/22
 151.131.0.0/16
