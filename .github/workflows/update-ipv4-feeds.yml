@@ -2,6 +2,9 @@ name: Update validated IPv4 feeds
 
 on:
   schedule:
+    # Requested for 03:17 UTC. GitHub queues scheduled runs and in practice starts
+    # them several hours later (usually 08:00-14:00 UTC). That is harmless for a
+    # daily list; the 72h fallback and freshness limits do not depend on the time.
     - cron: "17 3 * * *"
   workflow_dispatch:
   pull_request:
@@ -59,9 +62,11 @@ jobs:
   update:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # Up to 4 download attempts per source with 2/10/30 s pauses.
+    timeout-minutes: 25
     permissions:
       contents: write
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -112,13 +117,47 @@ jobs:
         env:
           PUBLISHED_SHA: ${{ steps.publish.outputs.sha }}
         run: python scripts/audit_sources.py --remote-ref "$PUBLISHED_SHA" --current
+      - name: Track sources disabled for a week as issues
+        # One open issue per long-disabled source instead of a red run every day;
+        # closed automatically once the source is healthy again or removed.
+        if: always() && hashFiles('.update-result.json') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix="Source disabled for 7+ days: "
+          open=$(gh issue list --state open --limit 200 --json number,title \
+            --jq ".[] | select(.title | startswith(\"$prefix\")) | \"\(.number)\t\(.title)\"")
+          wanted=$(jq -r '.long_disabled[].name' .update-result.json)
+          for name in $wanted; do
+            if ! cut -f2 <<<"$open" | grep -qxF "${prefix}${name}"; then
+              jq -r --arg n "$name" '.long_disabled[] | select(.name == $n) |
+                "Source `\(.name)` (\(.url)) has been disabled since \(.disabled_since) and is not part of the published list.\n\nLast error: `\(.error)`\n\nFix it or remove it from `sources.json` and run `python scripts/rebuild_snapshot.py`. This issue is closed automatically once the source is healthy again or removed."' \
+                .update-result.json > issue-body.md
+              gh issue create --title "${prefix}${name}" --body-file issue-body.md
+            fi
+          done
+          while IFS=$'\t' read -r number title; do
+            [ -n "$number" ] || continue
+            name=${title#"$prefix"}
+            if ! grep -qxF "$name" <<<"$wanted"; then
+              gh issue close "$number" --comment "\`$name\` is healthy again or no longer configured (run $GITHUB_RUN_ID)."
+            fi
+          done <<<"$open"
       - name: Report source failures after publishing healthy updates
         if: always()
         env:
           REFRESH_OUTCOME: ${{ steps.refresh.outcome }}
         run: |
           if [ -f AUDIT.md ]; then cat AUDIT.md >> "$GITHUB_STEP_SUMMARY"; fi
+          if [ -f .update-result.json ]; then
+            # Known problems are annotations; only new ones fail the run.
+            esc='gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A")'
+            jq -r ".warnings[] | \"::warning title=Known feed problem (not failing)::\" + ($esc)" .update-result.json
+            jq -r ".alerts[] | \"::error title=New feed problem::\" + ($esc)" .update-result.json
+          fi
           if [ "$REFRESH_OUTCOME" != "success" ]; then
-            echo "One or more feeds or the GitHub meta protection failed. See generated/status.json; healthy feeds were eligible for publication."
+            echo "A source was newly disabled, the GitHub meta protection failed, or the refresh aborted. See generated/status.json; healthy feeds were eligible for publication."
             exit 1
           fi

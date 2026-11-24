@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 from feed_policy import (
-    ROOT, RAW_PREFIX, MAX_STALE_HOURS, atomic_write, digest, download, fetch_feed, load_feeds, metrics, parse,
+    ROOT, RAW_PREFIX, MAX_STALE_HOURS, DISABLED_ISSUE_DAYS, atomic_write, digest, download, fetch_feed, load_feeds, metrics, parse,
     snapshot_body, unchanged_limit,
 )
 from feed_analysis import combine, load_allowlist, protection_effect, select_sources, turnover
@@ -106,6 +106,13 @@ def refresh_one(root: Path, feed: dict, previous: dict, now: datetime, fetch):
         if isinstance(error, StaleSourceError):
             record['rejected_upstream_updated_at'] = error.updated.isoformat(timespec='seconds')
         message = f"{type(error).__name__}: {error}"
+        if status == 'disabled':
+            # Kept across runs so a long outage can be reported once (issue)
+            # instead of failing every run. Older records fall back to their last success.
+            record['disabled_since'] = (previous.get('disabled_since') or previous.get('last_success') or timestamp(now)
+                                        if previous.get('status') == 'disabled' else timestamp(now))
+        else:
+            record.pop('disabled_since', None)
         record.update(status=status, checked_at=timestamp(now), error=message)
         return name, record, None, active
 
@@ -202,6 +209,8 @@ def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, wo
     networks = {}
     # Stale protection stays in force, but must not go unnoticed.
     degraded = github is not None and github['status'] != 'ok'
+    alerts = [f"GitHub meta protection: {github['status']} ({github['error']})"] if degraded else []
+    warnings, long_disabled = [], []
     for name, record, body, active in results:
         state["sources"][name] = record
         if body is not None:
@@ -210,7 +219,16 @@ def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, wo
             feed = next(f for f in feeds if f['name'] == name)
             networks[name] = parse((root / f'generated/{name}.ipv4').read_text(encoding='utf-8'), feed, published=True).networks
         degraded |= record["status"] in ('stale', 'disabled')
-        print(f"{name}: {record['status']}" + (f" ({record['error']})" if record["error"] else ""))
+        line = f"{name}: {record['status']}" + (f" ({record['error']})" if record["error"] else "")
+        print(line)
+        if record['status'] == 'disabled':
+            was = previous["sources"].get(name, {}).get('status')
+            (warnings if was == 'disabled' else alerts).append(line)
+            if now - datetime.fromisoformat(record['disabled_since']) >= timedelta(days=DISABLED_ISSUE_DAYS):
+                long_disabled.append({'name': name, 'url': record['url'], 'disabled_since': record['disabled_since'],
+                                      'error': record['error']})
+        elif record['status'] == 'stale':
+            warnings.append(line)
     state['redundancy'] = select_sources(feeds, state['sources'], networks, previous.get('redundancy', {}), now)
     selected = [ns for name, ns in networks.items() if state['sources'][name]['included']]
     combined = combine(selected, exceptions, protected)
@@ -229,7 +247,13 @@ def update(root: Path = ROOT, *, now: datetime | None = None, fetch=download, wo
     atomic_write(root / "filter.list", RAW_PREFIX + 'generated/combined.ipv4\n' if combined else '')
     atomic_write(root / "generated/status.json", json.dumps(state, indent=2) + "\n")
     atomic_write(root / "AUDIT.md", render_report(feeds, state))
-    atomic_write(root / ".update-result.json", json.dumps({"degraded": degraded}) + "\n")
+    # Exit code 2 (red run) only for new problems: a source newly disabled or the
+    # GitHub meta protection failing. A stale source still served from its 72h
+    # fallback and a source that stays disabled are warnings; a source disabled
+    # for DISABLED_ISSUE_DAYS is reported as a GitHub issue by the workflow.
+    result = {"degraded": degraded, "alert": bool(alerts), "alerts": alerts, "warnings": warnings,
+              "long_disabled": long_disabled}
+    atomic_write(root / ".update-result.json", json.dumps(result, indent=2) + "\n")
     return degraded
 
 
@@ -237,7 +261,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
     args = parser.parse_args()
-    raise SystemExit(2 if update(args.root) else 0)
+    update(args.root)
+    result = json.loads((args.root / ".update-result.json").read_text(encoding="utf-8"))
+    raise SystemExit(2 if result["alert"] else 0)
 
 
 if __name__ == "__main__":

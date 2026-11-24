@@ -3,7 +3,7 @@
 Automatically generated; historical notes are in `AUDIT-HISTORY.md`.
 
 - Checked at: 2026-11-24T13:37:33+00:00
-- Configured sources: 24
+- Configured sources: 21
 - Contributing sources: 20
 - Combined IPv4/CIDR entries: 311371
 - Active / expired exceptions: 0 / 0
@@ -27,11 +27,8 @@ Last success means successful retrieval and validation, not an upstream observat
 | [firehol-level1](https://iplists.firehol.org/files/firehol_level1.netset) | ok | True | 4631 | 2026-11-24T08:44:46+00:00 | 2026-11-24T13:37:33+00:00 |
 | [firehol-level2](https://iplists.firehol.org/files/firehol_level2.netset) | ok | True | 15157 | 2026-11-24T06:41:37+00:00 | 2026-11-24T13:37:33+00:00 |
 | [firehol-level3](https://iplists.firehol.org/files/firehol_level3.netset) | ok | True | 13528 | 2026-11-24T09:04:01+00:00 | 2026-11-24T13:37:33+00:00 |
-| [firehol-webserver](https://iplists.firehol.org/files/firehol_webserver.netset) | disabled | False | 976 | 2026-11-09T10:31:00+00:00 | 2026-11-15T10:47:38+00:00 |
-| [firehol-myip](https://iplists.firehol.org/files/myip.ipset) | disabled | False | 1099 | 2026-11-09T10:31:00+00:00 | 2026-11-15T10:47:38+00:00 |
 | [spamhaus-drop](https://www.spamhaus.org/drop/drop_v4.json) | ok | True | 1751 | 2026-11-24T12:56:44+00:00 | 2026-11-24T13:37:33+00:00 |
 | [blocklist-de-strongips](https://lists.blocklist.de/lists/strongips.txt) | ok | True | 277 | unknown | 2026-11-24T13:37:33+00:00 |
-| [myip-ms-latest-blacklist](https://myip.ms/files/blacklist/general/latest_blacklist.txt) | disabled | False | 1099 | 2026-11-09T11:25:55+00:00 | 2026-11-16T11:15:40+00:00 |
 | [ipsum-level2](https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt) | ok | True | 37369 | unknown | 2026-11-24T13:37:33+00:00 |
 | [interserver-iprbl](https://sigs.interserver.net/iprbl.txt) | ok | True | 4274 | unknown | 2026-11-24T13:37:33+00:00 |
 | [blocklist-de-export-ips-all](https://www.blocklist.de/downloads/export-ips_all.txt) | ok | True | 22601 | unknown | 2026-11-24T13:37:33+00:00 |
@@ -48,7 +45,6 @@ Last success means successful retrieval and validation, not an upstream observat
 | cins-army | 0 | 758 | False |
 | firehol-dshield-1d | 55 | 0 | True |
 | firehol-et-block | 1 | 0 | False |
-| firehol-myip | 0 | 0 | False |
 | threatview-high-confidence | 0 | 2870 | False |
 
 Suppression requires at least 14 elapsed days and daily observations against healthy non-candidate sources.

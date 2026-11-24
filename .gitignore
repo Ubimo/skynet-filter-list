@@ -1,3 +1,4 @@
 __pycache__/
 *.py[cod]
 .update-result.json
+issue-body.md
