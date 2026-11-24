@@ -94,23 +94,6 @@
     }
   },
   {
-    "name": "firehol-webserver",
-    "url": "https://iplists.firehol.org/files/firehol_webserver.netset",
-    "freshness": {
-      "type": "firehol",
-      "max_age_hours": 168
-    }
-  },
-  {
-    "name": "firehol-myip",
-    "url": "https://iplists.firehol.org/files/myip.ipset",
-    "freshness": {
-      "type": "firehol",
-      "max_age_hours": 168
-    },
-    "redundancy_candidate": true
-  },
-  {
     "name": "spamhaus-drop",
     "url": "https://www.spamhaus.org/drop/drop_v4.json",
     "freshness": {
@@ -122,11 +105,6 @@
   {
     "name": "blocklist-de-strongips",
     "url": "https://lists.blocklist.de/lists/strongips.txt"
-  },
-  {
-    "name": "myip-ms-latest-blacklist",
-    "url": "https://myip.ms/files/blacklist/general/latest_blacklist.txt",
-    "allow_ipv6": true
   },
   {
     "name": "ipsum-level2",

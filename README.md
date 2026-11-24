@@ -56,12 +56,10 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 | `firehol-level1` | FireHOL level 1 | provider timestamp, 168 h |
 | `firehol-level2` | FireHOL level 2 | provider timestamp, 168 h |
 | `firehol-level3` | FireHOL level 3 | provider timestamp, 168 h |
-| `firehol-webserver` | FireHOL webserver | provider timestamp, 168 h |
 | `firehol-cybercrime` | FireHOL Cybercrime | provider timestamp, 168 h, quarantined when stale |
 | `firehol-et-compromised` | Emerging Threats compromised (FireHOL) | provider timestamp, 168 h |
 | `firehol-et-block` | Emerging Threats block (FireHOL) | provider timestamp, 168 h |
 | `firehol-dshield-1d` | DShield top blocks, 1 day (FireHOL) | provider timestamp, 168 h |
-| `firehol-myip` | myip.ms (FireHOL) | provider timestamp, 168 h |
 | `firehol-blocklist-net-ua` | blocklist.net.ua (FireHOL); updated daily again since early October 2026 | **none** (explicitly disabled) |
 | `cins-army` | CINS Army | content, 168 h |
 | `ipsum-level2` | IPsum level 2 | content, 168 h |
@@ -70,7 +68,6 @@ Configured in [`sources.json`](sources.json), the only file to edit by hand.
 | `greensnow` | GreenSnow | content, 168 h |
 | `binarydefense` | Binary Defense banlist | content, 168 h |
 | `interserver-iprbl` | InterServer RBL | content, 168 h |
-| `myip-ms-latest-blacklist` | myip.ms latest | content, 168 h |
 | `hagezi-tif` | HaGeZi Threat Intelligence Feed (IPs) | content, 168 h |
 | `drb-ra-IPC2s-30day` | C2IntelFeeds, C2 IPs, 30 days | content, 168 h |
 | `threatfox-ipport` | abuse.ch ThreatFox API, `ip:port` IOCs first seen in the last 7 days, all confidence levels (Auth-Key) | content, 168 h |
@@ -126,13 +123,26 @@ that every listed address is malicious.
 | `disabled` | failed beyond that window, provider data expired, or no valid baseline | no |
 | `quarantined` | known stale-data condition for sources with `quarantine_on_stale`; checked every run, returns automatically | no |
 
-`stale` and `disabled` fail the workflow, but only after all healthy updates have
-been published. `quarantined` is expected and does not fail it.
+Only new problems fail the workflow, and only after all healthy updates have been
+published:
+
+- a source that becomes `disabled` fails the run once;
+- a failed GitHub meta protection fails every run until it recovers;
+- `stale` (still served from the 72-hour fallback) and a source that stays
+  `disabled` are shown as warnings in the run, not as failures;
+- a source `disabled` for 7 days (`DISABLED_ISSUE_DAYS`, counted from
+  `disabled_since` in `status.json`) gets one GitHub issue, which is closed
+  automatically when the source is healthy again or removed from `sources.json`;
+- `quarantined` is expected and does not fail it.
+
+Downloads are retried up to three times with 2, 10 and 30 second pauses on
+timeouts, aborted transfers and HTTP 408/425/429/5xx. Other client errors such as
+404 or 410 are permanent and are not retried.
 
 ## Redundancy suppression
 
 Sources marked `redundancy_candidate` (`firehol-et-block`, `firehol-dshield-1d`,
-`firehol-myip`, `cins-army`, `threatview-high-confidence`) are dropped from the union while they add nothing
+`cins-army`, `threatview-high-confidence`) are dropped from the union while they add nothing
 beyond the healthy non-candidate sources, and only after at least 14 elapsed days
 with 14 distinct daily observations. A gap over 48 hours or any unique address
 resets the observation; candidates cannot justify each other's removal. Suppressed
@@ -204,7 +214,10 @@ python scripts/lookup_ip.py 8.8.8.8
 
 The workflow [`.github/workflows/update-ipv4-feeds.yml`](.github/workflows/update-ipv4-feeds.yml)
 runs daily at 03:17 UTC, on pushes to `main` that touch configuration or code,
-and manually via *Run workflow*.
+and manually via *Run workflow*. GitHub queues scheduled runs; in practice they
+start several hours later (usually between 08:00 and 14:00 UTC). This is harmless
+for a daily list: fallback and freshness limits are measured in hours since the
+last successful validation, not from the scheduled time.
 
 **Update job** (on `main`):
 
@@ -226,8 +239,9 @@ The runner is pinned to `ubuntu-24.04`, all actions are pinned by commit SHA, an
 Dependabot proposes action updates weekly. No third-party Python packages are
 used.
 
-Updater exit codes: `0` success (an expected quarantine is fine), `2` completed
-with stale or disabled sources or failed GitHub meta protection, anything else
+Updater exit codes: `0` success (stale sources, sources that stay disabled and an
+expected quarantine are fine; details in `.update-result.json`), `2` completed with
+a newly disabled source or failed GitHub meta protection, anything else
 aborted.
 
 If Actions stops entirely, nothing here can expire data already loaded on a
@@ -349,6 +363,15 @@ produced by the scripts and verified byte for byte.
   the owner's request). The Auth-Key comes from the repository secret
   `THREATFOX_AUTH_KEY`. 1,741 IPv4 hosts at review, about 1,550 of them not
   covered by the other sources.
+
+- **2026-11-24**:
+  - `firehol-myip`, `myip-ms-latest-blacklist` and `firehol-webserver` removed:
+    all three depend on myip.ms, which has not published new data since
+    2026-11-09, and had been `disabled` since 2026-11-16. `firehol-myip` and
+    `myip-ms-latest-blacklist` were identical (1,099 entries each). The combined
+    list is unchanged (311,371 entries), since none of them was contributing.
+  - The workflow now fails only for new problems; known ones are warnings, and
+    sources disabled for 7 days get a GitHub issue. Downloads retry with backoff.
 
 Deliberately not included: dedicated Tor exit lists, VoIP/PBX feeds, broad scanner
 lists, FireHOL level 4 and IPsum level 1 (higher false-positive risk).

@@ -100,6 +100,24 @@ class PolicyTests(unittest.TestCase):
             self.assertEqual(download(FEED['url']), '8.8.8.8\n')
             self.assertEqual(opened.call_count, 2)
 
+    def test_download_backs_off_on_server_errors_but_not_client_errors(self):
+        import urllib.error
+        def error(code):
+            return urllib.error.HTTPError(FEED['url'], code, 'x', {}, None)
+        with patch('feed_policy.urllib.request.urlopen') as opened, patch('feed_policy.time.sleep') as slept:
+            opened.side_effect = [error(503), error(503), error(503), error(503)]
+            with self.assertRaises(urllib.error.HTTPError):
+                download(FEED['url'])
+            self.assertEqual(opened.call_count, 4)
+            self.assertEqual([c.args[0] for c in slept.call_args_list], [2, 10, 30])
+        for code in (404, 410):
+            with self.subTest(code=code), patch('feed_policy.urllib.request.urlopen') as opened, \
+                    patch('feed_policy.time.sleep') as slept:
+                opened.side_effect = [error(code)]
+                with self.assertRaises(urllib.error.HTTPError):
+                    download(FEED['url'])
+                self.assertEqual((opened.call_count, slept.call_count), (1, 0))
+
 
 class UpdateTests(unittest.TestCase):
     def setUp(self):
@@ -175,7 +193,48 @@ class UpdateTests(unittest.TestCase):
                 self.audit(now)
         state = json.loads((self.root / 'generated/status.json').read_text())
         self.assertNotIn('combined_anomaly', state)
-        self.assertEqual(json.loads((self.root / '.update-result.json').read_text()), {'degraded': False})
+        result = json.loads((self.root / '.update-result.json').read_text())
+        self.assertEqual((result['degraded'], result['alert'], result['warnings']), (False, False, []))
+
+    def result(self):
+        return json.loads((self.root / '.update-result.json').read_text())
+
+    def test_only_new_problems_alert(self):
+        # Source two keeps changing so only source one is unhealthy.
+        bodies = iter(f'8.8.6.{i}\n' for i in range(1, 50))
+        def down():
+            return {self.feeds[0]['url']: OSError('down'), self.feeds[1]['url']: next(bodies)}
+        self.run_update()
+        # Stale within the fallback window: a warning, the run stays green.
+        self.run_update(NOW + timedelta(hours=24), down())
+        result = self.result()
+        self.assertEqual((result['degraded'], result['alert'], len(result['warnings'])), (True, False, 1))
+        # Newly disabled: alert (red once).
+        self.run_update(NOW + timedelta(hours=73), down())
+        result = self.result()
+        self.assertTrue(result['alert'])
+        self.assertIn('one: disabled', result['alerts'][0])
+        self.assertEqual(self.state()['one']['disabled_since'], (NOW + timedelta(hours=73)).isoformat(timespec='seconds'))
+        self.audit(NOW + timedelta(hours=73))
+        # Still disabled: warning only; the start of the outage is kept.
+        self.run_update(NOW + timedelta(hours=97), down())
+        result = self.result()
+        self.assertEqual((result['alert'], result['long_disabled']), (False, []))
+        self.assertEqual(self.state()['one']['disabled_since'], (NOW + timedelta(hours=73)).isoformat(timespec='seconds'))
+        # Disabled for 7 days: reported for an issue, still not failing.
+        self.run_update(NOW + timedelta(hours=73, days=7), down())
+        result = self.result()
+        self.assertFalse(result['alert'])
+        self.assertEqual([d['name'] for d in result['long_disabled']], ['one'])
+        self.audit(NOW + timedelta(hours=73, days=7))
+        # Recovery clears the outage record.
+        self.run_update(NOW + timedelta(days=11), {self.feeds[0]['url']: '8.8.7.1\n', self.feeds[1]['url']: next(bodies)})
+        self.assertNotIn('disabled_since', self.state()['one'])
+        self.assertEqual((self.result()['alert'], self.result()['long_disabled']), (False, []))
+
+    def test_first_download_failure_alerts(self):
+        self.run_update(bodies={self.feeds[0]['url']: OSError('down'), self.feeds[1]['url']: BODY})
+        self.assertTrue(self.result()['alert'])
 
     def test_leftover_pending_shift_is_dropped(self):
         self.run_update()

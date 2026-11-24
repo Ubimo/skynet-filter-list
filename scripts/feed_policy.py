@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import time
+import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,11 @@ MAX_STALE_HOURS = 72
 # Sources without a provider timestamp: content unchanged for longer than this
 # is treated like expired provider data. Overridable per source.
 MAX_UNCHANGED_HOURS = 168
+# A source disabled for this long gets a GitHub issue instead of a red run every day.
+DISABLED_ISSUE_DAYS = 7
+# Pauses between download attempts: transient 5xx answers and cut-off responses
+# (IncompleteRead) usually clear within seconds.
+RETRY_DELAYS = (2, 10, 30)
 # No size, growth, shrink or turnover limits (owner's decision, 2026-10-01): any
 # change in a source's size is accepted immediately, as long as the file passes
 # the content checks and contains at least one valid IPv4 entry.
@@ -106,7 +112,14 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError(f"Refusing redirect (HTTP {code})")
 
 
-def download(url: str, timeout: float = 30, retries: int = 1, headers: dict | None = None,
+def retryable(error: Exception) -> bool:
+    """Client errors (404, 410, 401, ...) are permanent; retrying only delays the report."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in (408, 425, 429) or error.code >= 500
+    return not isinstance(error, (ValueError, UnicodeDecodeError))
+
+
+def download(url: str, timeout: float = 30, retries: int = len(RETRY_DELAYS), headers: dict | None = None,
              data: bytes | None = None, redirects: bool = True) -> str:
     open_url = urllib.request.urlopen if redirects else urllib.request.build_opener(NoRedirect).open
     for attempt in range(retries + 1):
@@ -120,10 +133,10 @@ def download(url: str, timeout: float = 30, retries: int = 1, headers: dict | No
             if len(content) > MAX_SOURCE_BYTES:
                 raise ValueError("Source exceeds 64 MiB")
             return content.decode("utf-8-sig", errors="strict")
-        except Exception:
-            if attempt == retries:
+        except Exception as error:
+            if attempt == retries or not retryable(error):
                 raise
-            time.sleep(1)
+            time.sleep(RETRY_DELAYS[min(attempt, len(RETRY_DELAYS) - 1)])
     raise AssertionError("unreachable")
 
 
